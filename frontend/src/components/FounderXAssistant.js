@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
@@ -136,8 +137,6 @@ export default function FounderXAssistant() {
   // BARGE-IN DETECTION (SpeechRecognition during TTS)
   const speechRecognitionRef = useRef(null);
   const bargeInActiveRef = useRef(false);
-
-  const API_URL = (typeof window !== 'undefined' ? process.env.NEXT_PUBLIC_API_URL : undefined) || 'http://localhost:3000';
 
   // QUICK STARTER ACTION BUTTONS
   const quickActions = [

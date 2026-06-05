@@ -7,6 +7,7 @@ import PostCard from '../../components/PostCard';
 import Link from 'next/link';
 import { Bookmark, Building, FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { API_URL } from '../../utils/api';
 
 export default function BookmarksPage() {
   const { user, loading } = useAuth();
@@ -26,7 +27,7 @@ export default function BookmarksPage() {
   const fetchBookmarks = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:3000/api/users/bookmarks', {
+      const res = await fetch(`${API_URL}/api/users/bookmarks`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

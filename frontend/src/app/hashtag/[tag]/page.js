@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState, useEffect } from 'react';
 import Navbar from '../../../components/Navbar';
@@ -30,7 +31,7 @@ export default function HashtagPage() {
       }
 
       // Allow public access to hashtags
-      const res = await fetch(`http://localhost:3000/api/posts/hashtag/${tag}`, {
+      const res = await fetch(`${API_URL}/api/posts/hashtag/${tag}`, {
         headers
       });
       

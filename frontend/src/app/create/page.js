@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
@@ -44,7 +45,7 @@ export default function CreatePostPage() {
     try {
       setFetchingStartups(true);
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:3000/api/startups?founderId=${user._id}`, {
+      const res = await fetch(`${API_URL}/api/startups?founderId=${user._id}`, {
         headers: { Authorization: `Bearer ${token}` },
         credentials: 'include'
       });
@@ -106,7 +107,7 @@ export default function CreatePostPage() {
         formData.append('mediaUrl', mediaUrl);
       }
 
-      const res = await fetch('http://localhost:3000/api/posts', {
+      const res = await fetch(`${API_URL}/api/posts`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`

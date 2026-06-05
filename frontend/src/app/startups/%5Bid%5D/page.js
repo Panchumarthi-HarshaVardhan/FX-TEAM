@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -588,7 +589,7 @@ export default function StartupDetailPage() {
   const fetchStartup = async () => {
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await fetch(`http://localhost:3000/api/startups/${id}`, { headers });
+      const res = await fetch(`${API_URL}/api/startups/${id}`, { headers });
       const json = await res.json();
       if (json.success && json.data) {
         const merged = {
@@ -642,7 +643,7 @@ export default function StartupDetailPage() {
 
   const fetchJobs = async () => {
     try {
-      const res = await fetch(`http://localhost:3000/api/startups/${id}/jobs`);
+      const res = await fetch(`${API_URL}/api/startups/${id}/jobs`);
       const json = await res.json();
       if (json.success && json.data) {
         setJobs(json.data);
@@ -655,7 +656,7 @@ export default function StartupDetailPage() {
   const fetchAppliedJobs = async () => {
     if (!token || (user?.role !== 'user' && user?.role !== 'job_seeker')) return;
     try {
-      const res = await fetch('http://localhost:3000/api/user/applications', {
+      const res = await fetch(`${API_URL}/api/user/applications`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
@@ -688,7 +689,7 @@ export default function StartupDetailPage() {
     }
     const method = isFollowing ? 'DELETE' : 'POST';
     try {
-      const res = await fetch(`http://localhost:3000/api/startups/${startup._id}/follow`, {
+      const res = await fetch(`${API_URL}/api/startups/${startup._id}/follow`, {
         method,
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -717,7 +718,7 @@ export default function StartupDetailPage() {
     }
     const method = isSaved ? 'DELETE' : 'POST';
     try {
-      const res = await fetch(`http://localhost:3000/api/startups/${startup._id}/save`, {
+      const res = await fetch(`${API_URL}/api/startups/${startup._id}/save`, {
         method,
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -738,7 +739,7 @@ export default function StartupDetailPage() {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:3000/api/users/${founderId}/follow`, {
+      const res = await fetch(`${API_URL}/api/users/${founderId}/follow`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -873,7 +874,7 @@ function InvestorInterestModal({ isOpen, onClose, startupId, onInterestSent }) {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3000/api/investor/interest-request', {
+      const res = await fetch(`${API_URL}/api/investor/interest-request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -979,7 +980,7 @@ function JobApplyModal({ isOpen, onClose, job, startupName, onSuccess }) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/jobs/${job._id}/apply`, {
+      const res = await fetch(`${API_URL}/api/jobs/${job._id}/apply`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

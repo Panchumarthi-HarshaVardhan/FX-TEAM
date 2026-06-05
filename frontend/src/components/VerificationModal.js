@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState } from 'react';
 import { X, Loader, Upload, Link as LinkIcon, ShieldCheck } from 'lucide-react';
@@ -15,7 +16,7 @@ export default function VerificationModal({ isOpen, onClose, targetType, targetI
     setLoading(true);
 
     try {
-      const res = await fetch('http://localhost:3000/api/verification', {
+      const res = await fetch(`${API_URL}/api/verification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

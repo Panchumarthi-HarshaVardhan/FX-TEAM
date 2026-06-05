@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -13,7 +14,7 @@ export default function UsernameRedirect() {
   useEffect(() => {
     const resolveUsername = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/users/handle/${username}`);
+        const res = await fetch(`${API_URL}/api/users/handle/${username}`);
         
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
