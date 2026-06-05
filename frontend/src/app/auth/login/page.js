@@ -5,14 +5,31 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import { Eye, EyeOff } from 'lucide-react';
+import { useGoogleLogin } from '@react-oauth/google';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const { user, loading, login } = useAuth();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const { user, loading, login, googleLogin } = useAuth();
   const router = useRouter();
+
+  const handleGoogleSuccess = async (tokenResponse) => {
+    setIsGoogleLoading(true);
+    setError('');
+    const res = await googleLogin(tokenResponse.access_token);
+    if (!res.success) {
+      setError(res.error);
+      setIsGoogleLoading(false);
+    }
+  };
+
+  const gLogin = useGoogleLogin({
+    onSuccess: handleGoogleSuccess,
+    onError: () => setError('Google login failed. Please try again.')
+  });
 
   useEffect(() => {
     if (!loading && user) {
@@ -89,6 +106,24 @@ export default function LoginPage() {
             Sign In
           </button>
         </form>
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-200"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">Or continue with</span>
+          </div>
+        </div>
+
+        <button
+          onClick={() => gLogin()}
+          disabled={isGoogleLoading}
+          className="w-full bg-white text-gray-700 font-bold py-3 px-4 border border-gray-300 rounded-xl hover:bg-gray-50 transition flex items-center justify-center gap-3 shadow-sm disabled:opacity-50"
+        >
+          <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
+          {isGoogleLoading ? 'Connecting...' : 'Continue with Google'}
+        </button>
 
         <div className="mt-6 text-center text-sm text-body">
           Don&apos;t have an account?{' '}

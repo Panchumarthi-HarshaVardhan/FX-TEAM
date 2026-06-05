@@ -203,6 +203,44 @@ const userSchema = new mongoose.Schema({
     enum: ['linkedin', 'domain_email', 'document'],
     default: 'linkedin'
   },
+  // --- New Verification Fields ---
+  isEmailVerified: {
+    type: Boolean,
+    default: false
+  },
+  emailVerifiedAt: Date,
+  emailVerificationOtp: String,
+  emailVerificationExpires: Date,
+  googleVerified: {
+    type: Boolean,
+    default: false
+  },
+  founderVerificationData: {
+    documentUrl: String, // Aadhaar or Passport
+    panCardUrl: String,
+    linkedinUrl: String
+  },
+  investorVerificationData: {
+    panCardUrl: String,
+    linkedinUrl: String,
+    companyWebsite: String,
+    investmentProofUrl: String
+  },
+  founderVerificationStatus: {
+    type: String,
+    enum: ['unverified', 'pending', 'approved', 'rejected'],
+    default: 'unverified'
+  },
+  investorVerificationStatus: {
+    type: String,
+    enum: ['unverified', 'pending', 'approved', 'rejected'],
+    default: 'unverified'
+  },
+  adminVerificationNotes: {
+    type: String,
+    default: ''
+  },
+  // -------------------------------
   founderScore: {
     type: Number,
     default: 0
@@ -303,6 +341,7 @@ userSchema.methods.toPublicJSON = function() {
     fullName: this.fullName,
     name: this.fullName || this.name,
     username: this.username,
+    email: this.email,
     role: this.role,
     profileImage: this.profileImage,
     coverImage: this.coverImage,
@@ -320,8 +359,15 @@ userSchema.methods.toPublicJSON = function() {
     followers: this.followers,
     following: this.following,
     isVerified: this.isVerified,
+    isEmailVerified: this.isEmailVerified,
+    googleVerified: this.googleVerified,
+    founderVerificationStatus: this.founderVerificationStatus,
+    investorVerificationStatus: this.investorVerificationStatus,
+    founderVerificationData: this.founderVerificationData,
+    investorVerificationData: this.investorVerificationData,
     verificationBadge: this.verificationBadge,
     founderScore: this.founderScore || 0,
+    trustScore: this.trustScore,
     socialLinks: this.socialLinks,
     location: this.location,
     subscriptionPlan: this.subscriptionPlan,
@@ -342,6 +388,24 @@ userSchema.methods.toPublicJSON = function() {
 
   return data;
 };
+
+// Trust Score calculation
+userSchema.virtual('trustScore').get(function() {
+  let score = 0;
+  if (this.isEmailVerified) score += 30;
+  if (this.googleVerified || this.googleId) score += 10;
+  if (this.profileCompleted || this.isProfileComplete) score += 20;
+  
+  if (this.role === 'founder' && this.founderVerificationStatus === 'approved') {
+    score += 40;
+  } else if (this.role === 'investor' && this.investorVerificationStatus === 'approved') {
+    score += 40;
+  } else if (this.role === 'job_seeker' && this.verificationStatus === 'verified') {
+    score += 40;
+  }
+
+  return score;
+});
 
 // Index for performance
 userSchema.index({ email: 1 });

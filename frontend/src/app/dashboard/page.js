@@ -13,19 +13,24 @@ export default function Dashboard() {
     if (loading) return;
 
     if (!user) {
-      router.push('/auth/login');
+      router.replace('/auth/login');
+      return;
+    }
+
+    if (!user.isEmailVerified) {
+      router.replace(`/verify-email?email=${encodeURIComponent(user.email)}`);
       return;
     }
 
     // Redirect based on role
     if (user.role === 'admin') {
-      router.push('/dashboard/admin');
+      router.replace('/dashboard/admin');
     } else if (user.role === 'investor') {
-      router.push('/dashboard/investor');
+      router.replace('/dashboard/investor');
     } else if (user.role === 'job_seeker') {
-      router.push('/dashboard/job-seeker');
+      router.replace('/dashboard/job-seeker');
     } else {
-      router.push('/dashboard/founder');
+      router.replace('/dashboard/founder');
     }
   }, [user, loading, router]);
 

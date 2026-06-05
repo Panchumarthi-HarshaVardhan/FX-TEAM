@@ -433,7 +433,7 @@ export default function JobSeekerDashboard() {
                           <div className="flex items-start gap-4">
                             <div className="h-12 w-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-indigo-650 overflow-hidden flex-shrink-0">
                               {job.startupLogo ? (
-                                <img src={job.startupLogo} alt="" className="h-full w-full object-cover" />
+                                <img src={job.startupLogo} alt="Startup logo" className="h-full w-full object-cover" />
                               ) : (
                                 job.startupName?.[0]?.toUpperCase()
                               )}
@@ -582,7 +582,7 @@ export default function JobSeekerDashboard() {
                       <div className="flex items-center gap-4">
                         <div className="h-12 w-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-indigo-650 overflow-hidden flex-shrink-0 text-base">
                           {team.startupId?.logo ? (
-                            <img src={team.startupId.logo} alt="" className="h-full w-full object-cover" />
+                            <img src={team.startupId.logo} alt="Startup logo" className="h-full w-full object-cover" />
                           ) : (
                             team.startupId?.name?.[0]?.toUpperCase()
                           )}
@@ -639,7 +639,7 @@ export default function JobSeekerDashboard() {
                           <div className="flex items-center gap-3">
                             <div className="h-10 w-10 bg-blue-105 rounded-xl flex items-center justify-center text-primary font-bold text-lg overflow-hidden border">
                               {startup.logo ? (
-                                <img src={startup.logo} alt="" className="h-full w-full object-cover" />
+                                <img src={startup.logo} alt="Startup logo" className="h-full w-full object-cover" />
                               ) : (
                                 startup.name?.[0]?.toUpperCase()
                               )}

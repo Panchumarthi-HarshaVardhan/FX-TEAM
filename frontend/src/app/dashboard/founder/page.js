@@ -106,15 +106,15 @@ const demoData = {
   ]
 };
 
-const demoScoreData = {
-  score: 87,
-  tips: [
-    'Add more traction metrics to your startup profile',
-    'Upload a demo video to increase engagement',
-    'Connect with more investors to expand your network'
-  ]
-};
-
+const founderJourney = [
+  { id: 1, title: 'Complete profile', completed: true },
+  { id: 2, title: 'Add startup', completed: true },
+  { id: 3, title: 'Upload pitch deck', completed: false },
+  { id: 4, title: 'Connect with investors', completed: true },
+  { id: 5, title: 'Launch first product', completed: true },
+  { id: 6, title: 'Get verified', completed: true },
+  { id: 7, title: 'Reach 1000 views', completed: false }
+];
 
 const aiInsights = [
   'Profiles with startup descriptions get 3x more investor engagement.',
@@ -415,6 +415,11 @@ export default function FounderDashboard() {
 
     if (!user) {
       router.push('/auth/login');
+      return;
+    }
+
+    if (!user.isEmailVerified) {
+      router.push('/verify-email');
       return;
     }
 
@@ -743,22 +748,40 @@ export default function FounderDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pt-24">
         {/* Header Block */}
         <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 leading-tight">Founder Mission Control 🚀</h1>
-            <p className="text-sm text-slate-500 font-semibold mt-1">Welcome back, {user?.name}</p>
-            {user && !user.isVerified && (
-              <button 
-                onClick={() => {
-                  setVerificationTarget({ type: 'User', id: user._id });
-                  setShowVerificationModal(true);
-                }}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="h-16 w-16 bg-blue-100 rounded-full flex items-center justify-center font-bold text-2xl text-blue-600 border-4 border-white shadow-sm">
+              {user?.name ? user.name[0].toUpperCase() : 'F'}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-black text-slate-950 font-sans tracking-tight">Founder Dashboard</h1>
+                {user?.isEmailVerified && (
+                  <span title="Email Verified" className="p-1 bg-blue-100 text-blue-600 rounded-full">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </span>
+                )}
+                {user?.founderVerificationStatus === 'approved' && (
+                  <span title="Identity Verified" className="p-1 bg-green-100 text-green-600 rounded-full">
+                    <ShieldCheck className="w-4 h-4" />
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-slate-500 font-semibold mt-1">Welcome back, {user?.name}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            {user && user.founderVerificationStatus !== 'approved' && (
+              <Link 
+                href="/dashboard/verification-center"
                 className="mt-2 text-xs text-primary font-bold hover:underline flex items-center"
               >
                 <ShieldCheck className="h-4 w-4 mr-1" />
-                Get Verified Founder Badge
-              </button>
+                {user.founderVerificationStatus === 'pending' ? 'Verification Pending' : 'Get Verified Founder Badge'}
+              </Link>
             )}
           </div>
+        </div>
           <Link href="/startups/create" className="flex items-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-650 transition shadow-sm text-xs font-bold font-sans">
             <Plus className="h-5 w-5 mr-2" />
             New Startup
@@ -824,8 +847,13 @@ export default function FounderDashboard() {
              </div>
 
              <FounderScoreCard 
-               score={demoScoreData.score} 
-               tips={demoScoreData.tips} 
+               score={user?.trustScore || 0} 
+               tips={[
+                 !user?.isEmailVerified ? "Verify your email address (+30 pts)" : null,
+                 !user?.founderVerificationStatus || user?.founderVerificationStatus === 'unverified' ? "Complete identity verification (+40 pts)" : null,
+                 !user?.profileCompleted ? "Complete your profile details (+20 pts)" : null,
+                 !user?.googleId ? "Link your Google account (+10 pts)" : null
+               ].filter(Boolean)} 
              />
           </div>
           
@@ -1207,7 +1235,7 @@ export default function FounderDashboard() {
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-blue-50 flex items-center justify-center font-bold text-primary border text-sm overflow-hidden flex-shrink-0">
                           {member.image ? (
-                            <img src={member.image} alt="" className="h-full w-full object-cover" />
+                            <img src={member.image} alt="Team member" className="h-full w-full object-cover" />
                           ) : (
                             member.name?.[0]
                           )}

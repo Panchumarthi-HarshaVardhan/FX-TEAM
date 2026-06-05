@@ -666,9 +666,27 @@ export default function InvestorDashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4 bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
           <div>
-            <h1 className="text-3xl font-bold text-heading">Investor Dashboard</h1>
-            <p className="text-body mt-1">Discover, track, and invest in the next generation of startups.</p>
-            
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center font-bold text-2xl text-green-600 border-4 border-white shadow-sm">
+                {user?.name ? user.name[0].toUpperCase() : 'I'}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-3xl font-bold text-heading">Investor Dashboard</h1>
+                  {user?.isEmailVerified && (
+                    <span title="Email Verified" className="p-1 bg-blue-100 text-blue-600 rounded-full">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </span>
+                  )}
+                  {user?.investorVerificationStatus === 'approved' && (
+                    <span title="Identity Verified" className="p-1 bg-green-100 text-green-600 rounded-full">
+                      <ShieldCheck className="w-5 h-5" />
+                    </span>
+                  )}
+                </div>
+                <p className="text-body mt-1">Welcome back, {user?.name}. Discover, track, and invest in the next generation of startups.</p>
+              </div>
+            </div>
             {/* Availability Toggle Switch */}
             <div className="mt-4 flex items-center gap-3">
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Status:</span>
@@ -742,6 +760,18 @@ export default function InvestorDashboard() {
                 Quick Actions
               </h3>
               <div className="flex flex-col gap-2.5">
+                {user && user.investorVerificationStatus !== 'approved' && (
+                  <Link
+                    href="/dashboard/verification-center"
+                    className="flex items-center justify-between p-3 bg-green-50/50 hover:bg-green-50 border border-green-100 rounded-xl transition text-xs font-bold text-green-700"
+                  >
+                    <span className="flex items-center gap-2">
+                      <ShieldCheck className="h-4 w-4" />
+                      {user.investorVerificationStatus === 'pending' ? 'Verification Pending' : 'Get Verified Badge'}
+                    </span>
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Link>
+                )}
                 <Link
                   href="/inbox"
                   className="flex items-center justify-between p-3 bg-blue-50/50 hover:bg-blue-50 border border-blue-100 rounded-xl transition text-xs font-bold text-blue-700"

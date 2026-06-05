@@ -95,3 +95,111 @@ exports.reviewRequest = async (req, res) => {
         res.status(500).json({ success: false, error: 'Server Error' });
     }
 };
+
+// @desc    Submit Founder Verification
+// @route   POST /api/verification/founder
+// @access  Private
+exports.submitFounderVerification = async (req, res) => {
+  try {
+    const { documentUrl, panCardUrl, linkedinUrl } = req.body;
+    
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    if (user.role !== 'founder') {
+      return res.status(403).json({ message: 'Only founders can submit founder verification' });
+    }
+
+    user.founderVerificationData = {
+      documentUrl,
+      panCardUrl,
+      linkedinUrl
+    };
+    user.founderVerificationStatus = 'pending';
+    
+    await user.save({ validateBeforeSave: false });
+    res.status(200).json({ success: true, message: 'Founder verification submitted successfully' });
+  } catch (error) {
+    console.error('Founder verification error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Submit Investor Verification
+// @route   POST /api/verification/investor
+// @access  Private
+exports.submitInvestorVerification = async (req, res) => {
+  try {
+    const { panCardUrl, linkedinUrl, companyWebsite, investmentProofUrl } = req.body;
+    
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    
+    if (user.role !== 'investor') {
+      return res.status(403).json({ message: 'Only investors can submit investor verification' });
+    }
+
+    user.investorVerificationData = {
+      panCardUrl,
+      linkedinUrl,
+      companyWebsite,
+      investmentProofUrl
+    };
+    user.investorVerificationStatus = 'pending';
+    
+    await user.save({ validateBeforeSave: false });
+    res.status(200).json({ success: true, message: 'Investor verification submitted successfully' });
+  } catch (error) {
+    console.error('Investor verification error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Get Admin Verifications (Pending & All specialized verifications)
+// @route   GET /api/admin/verifications
+// @access  Private/Admin
+exports.getSpecializedVerifications = async (req, res) => {
+  try {
+    const users = await User.find({
+      $or: [
+        { founderVerificationStatus: { $ne: 'unverified' } },
+        { investorVerificationStatus: { $ne: 'unverified' } }
+      ]
+    }).select('name email role founderVerificationStatus investorVerificationStatus founderVerificationData investorVerificationData adminVerificationNotes');
+
+    res.status(200).json({ success: true, data: users });
+  } catch (error) {
+    console.error('Fetch verifications error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// @desc    Update Verification Status
+// @route   PUT /api/admin/verifications/:id
+// @access  Private/Admin
+exports.updateSpecializedVerificationStatus = async (req, res) => {
+  try {
+    const { status, type, adminNotes } = req.body; // status: 'approved' | 'rejected', type: 'founder' | 'investor'
+    
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (type === 'founder') {
+      user.founderVerificationStatus = status;
+      if (status === 'approved') user.isVerified = true;
+    } else if (type === 'investor') {
+      user.investorVerificationStatus = status;
+      if (status === 'approved') user.isVerified = true;
+    }
+
+    if (adminNotes) {
+      user.adminVerificationNotes = adminNotes;
+    }
+
+    await user.save({ validateBeforeSave: false });
+    res.status(200).json({ success: true, message: 'Verification status updated', data: user });
+  } catch (error) {
+    console.error('Update verification error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

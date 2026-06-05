@@ -24,6 +24,11 @@ const {
   updateSettings
 } = require('../controllers/adminController');
 
+const {
+  getSpecializedVerifications,
+  updateSpecializedVerificationStatus
+} = require('../controllers/verificationController');
+
 // All administrative routes are locked behind JWT authentication and administrative role check
 router.use(protect);
 router.use(authorize('admin'));
@@ -42,6 +47,10 @@ router.get('/startups', getStartups);
 router.put('/startups/:id/verify', verifyStartup);
 router.put('/startups/:id', editStartup);
 router.delete('/startups/:id', deleteStartup);
+
+// Verification Centers
+router.get('/verifications/specialized', getSpecializedVerifications);
+router.put('/verifications/specialized/:id', updateSpecializedVerificationStatus);
 
 // Investor Profiles
 router.get('/investors', getInvestors);
