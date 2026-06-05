@@ -50,4 +50,4 @@ const investmentRequestSchema = new mongoose.Schema({
   }
 });
 
-module.exports = mongoose.model('InvestmentRequest', investmentRequestSchema);
+module.exports = require('../utils/firebaseModel').models.InvestmentRequest;

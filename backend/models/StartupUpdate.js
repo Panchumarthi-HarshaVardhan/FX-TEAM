@@ -37,4 +37,4 @@ const startupUpdateSchema = new mongoose.Schema({
   timestamps: true
 });
 
-module.exports = mongoose.model('StartupUpdate', startupUpdateSchema);
+module.exports = require('../utils/firebaseModel').models.StartupUpdate;

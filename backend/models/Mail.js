@@ -101,4 +101,4 @@ mailSchema.index({ senderId: 1 });
 mailSchema.index({ receiverId: 1 });
 mailSchema.index({ type: 1 });
 
-module.exports = mongoose.model('Mail', mailSchema);
+module.exports = require('../utils/firebaseModel').models.Mail;

@@ -120,4 +120,4 @@ commentSchema.index({ userId: 1 });
 commentSchema.index({ parentComment: 1 });
 commentSchema.index({ createdAt: -1 });
 
-module.exports = mongoose.model('Comment', commentSchema);
+module.exports = require('../utils/firebaseModel').models.Comment;

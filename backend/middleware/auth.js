@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const { getById } = require('../utils/firebaseHelpers');
 
 const extractToken = (req) => {
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -26,10 +26,11 @@ const protect = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.id).select('-password');
-    if (!req.user) {
+    const user = await getById('users', decoded.id);
+    if (!user) {
       return res.status(401).json({ message: 'User deleted or not found' });
     }
+    req.user = user;
     next();
   } catch (error) {
     console.error(error);
@@ -39,9 +40,9 @@ const protect = async (req, res, next) => {
 
 const authorize = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({ 
-        message: `User role ${req.user.role} is not authorized to access this route`
+        message: `User role ${req.user?.role || 'unknown'} is not authorized to access this route`
       });
     }
     next();
@@ -57,7 +58,10 @@ const optionalProtect = async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.id).select('-password');
+    const user = await getById('users', decoded.id);
+    if (user) {
+      req.user = user;
+    }
   } catch (error) {
     console.log('Optional auth token invalid:', error.message);
   }

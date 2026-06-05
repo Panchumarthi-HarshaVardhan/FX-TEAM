@@ -1,148 +1,132 @@
-const User = require('../models/User');
 const bcrypt = require('bcryptjs');
+const { getById, updateById, findOneByField, getAll } = require('../utils/firebaseHelpers');
 
-// @desc    Get user settings
-// @route   GET /api/settings
-// @access  Private
+const toPublicUser = (user) => {
+  if (!user) return null;
+  const { passwordHash, emailVerificationOtp, emailVerificationExpires, ...rest } = user;
+  return rest;
+};
+
 exports.getSettings = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-passwordHash -emailVerificationOtp -emailVerificationExpires');
+    const user = await getById('users', req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
-    res.status(200).json({ success: true, data: user });
+    res.status(200).json({ success: true, data: toPublicUser(user) });
   } catch (error) {
     console.error('Error getting settings:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-// @desc    Update account settings
-// @route   PUT /api/settings/account
-// @access  Private
 exports.updateAccount = async (req, res) => {
   try {
     const { fullName, username, email, bio } = req.body;
-    const user = await User.findById(req.user.id);
+    const user = await getById('users', req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    // Check username uniqueness if changed
+    const updates = {};
     if (username && username !== user.username) {
-      const existingUser = await User.findOne({ username: username.toLowerCase(), _id: { $ne: user._id } });
-      if (existingUser) {
+      const existingUser = await findOneByField('users', 'username', username.toLowerCase());
+      if (existingUser && existingUser.id !== user.id) {
         return res.status(400).json({ success: false, error: 'Username already taken' });
       }
-      user.username = username.toLowerCase();
+      updates.username = username.toLowerCase();
     }
 
-    // Check email uniqueness if changed
     if (email && email !== user.email) {
-      const existingEmail = await User.findOne({ email: email.toLowerCase(), _id: { $ne: user._id } });
-      if (existingEmail) {
+      const existingEmail = await findOneByField('users', 'email', email.toLowerCase());
+      if (existingEmail && existingEmail.id !== user.id) {
         return res.status(400).json({ success: false, error: 'Email already in use' });
       }
-      user.email = email.toLowerCase();
-      user.isEmailVerified = false; // Re-verify new email
+      updates.email = email.toLowerCase();
+      updates.isEmailVerified = false;
     }
 
     if (fullName !== undefined) {
-      user.fullName = fullName;
-      user.name = fullName;
+      updates.fullName = fullName;
+      updates.name = fullName;
     }
-    if (bio !== undefined) user.bio = bio;
+    if (bio !== undefined) updates.bio = bio;
 
-    await user.save();
-
-    res.status(200).json({ success: true, data: user.toPublicJSON(), message: 'Account updated successfully' });
+    const updated = await updateById('users', req.user.id, updates);
+    res.status(200).json({ success: true, data: toPublicUser(updated), message: 'Account updated successfully' });
   } catch (error) {
     console.error('Error updating account:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-// @desc    Update privacy settings
-// @route   PUT /api/settings/privacy
-// @access  Private
 exports.updatePrivacy = async (req, res) => {
   try {
     const { profileVisibility, messagePermission, showInvestmentInterests } = req.body;
-    const user = await User.findById(req.user.id);
+    const user = await getById('users', req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    if (!user.privacySettings) user.privacySettings = {};
-    if (profileVisibility !== undefined) user.privacySettings.profileVisibility = profileVisibility;
-    if (messagePermission !== undefined) user.privacySettings.messagePermission = messagePermission;
-    if (showInvestmentInterests !== undefined) user.privacySettings.showInvestmentInterests = showInvestmentInterests;
+    const privacySettings = { ...(user.privacySettings || {}) };
+    if (profileVisibility !== undefined) privacySettings.profileVisibility = profileVisibility;
+    if (messagePermission !== undefined) privacySettings.messagePermission = messagePermission;
+    if (showInvestmentInterests !== undefined) privacySettings.showInvestmentInterests = showInvestmentInterests;
 
-    await user.save();
-
-    res.status(200).json({ success: true, data: user.privacySettings, message: 'Privacy settings updated' });
+    const updated = await updateById('users', req.user.id, { privacySettings });
+    res.status(200).json({ success: true, data: updated.privacySettings, message: 'Privacy settings updated' });
   } catch (error) {
     console.error('Error updating privacy:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-// @desc    Update notification preferences
-// @route   PUT /api/settings/notifications
-// @access  Private
 exports.updateNotifications = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await getById('users', req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    if (!user.notificationPreferences) user.notificationPreferences = {};
-    const prefs = req.body;
+    const notificationPreferences = { ...(user.notificationPreferences || {}) };
     const validKeys = ['emailNotifications', 'pushNotifications', 'newFollower', 'newMessage', 'investorInterest', 'startupUpdates', 'weeklyDigest', 'marketingEmails'];
-    
     for (const key of validKeys) {
-      if (prefs[key] !== undefined) {
-        user.notificationPreferences[key] = prefs[key];
+      if (req.body[key] !== undefined) {
+        notificationPreferences[key] = req.body[key];
       }
     }
 
-    await user.save();
-
-    res.status(200).json({ success: true, data: user.notificationPreferences, message: 'Notification preferences updated' });
+    const updated = await updateById('users', req.user.id, { notificationPreferences });
+    res.status(200).json({ success: true, data: updated.notificationPreferences, message: 'Notification preferences updated' });
   } catch (error) {
     console.error('Error updating notifications:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-// @desc    Delete account
-// @route   DELETE /api/settings/account
-// @access  Private
 exports.deleteAccount = async (req, res) => {
   try {
     const { password } = req.body;
-    const user = await User.findById(req.user.id);
+    const user = await getById('users', req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    // If user has a password (not Google-only), verify it
     if (user.passwordHash) {
       if (!password) {
         return res.status(400).json({ success: false, error: 'Password is required to delete account' });
       }
-      const isMatch = await user.comparePassword(password);
+      const isMatch = await bcrypt.compare(password, user.passwordHash);
       if (!isMatch) {
         return res.status(400).json({ success: false, error: 'Incorrect password' });
       }
     }
 
-    // Soft delete: mark inactive
-    user.isActive = false;
-    user.email = `deleted_${user._id}_${user.email}`;
-    user.username = `deleted_${user._id}_${user.username}`;
-    await user.save();
+    await updateById('users', req.user.id, {
+      isActive: false,
+      email: `deleted_${user.id}_${user.email}`,
+      username: `deleted_${user.id}_${user.username}`
+    });
 
     res.status(200).json({ success: true, message: 'Account deleted successfully' });
   } catch (error) {
@@ -151,24 +135,24 @@ exports.deleteAccount = async (req, res) => {
   }
 };
 
-// @desc    Export user data
-// @route   GET /api/settings/export
-// @access  Private
 exports.exportData = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id)
-      .select('-passwordHash -emailVerificationOtp -emailVerificationExpires')
-      .populate('followers', 'fullName username email')
-      .populate('following', 'fullName username email')
-      .lean();
-      
+    const user = await getById('users', req.user.id);
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
+    const exportData = toPublicUser(user);
+    if (user.followers?.length) {
+      exportData.followers = (await Promise.all(user.followers.map((id) => getById('users', id)))).filter(Boolean);
+    }
+    if (user.following?.length) {
+      exportData.following = (await Promise.all(user.following.map((id) => getById('users', id)))).filter(Boolean);
+    }
+
     res.setHeader('Content-Disposition', `attachment; filename="founderx_data_${user.username}.json"`);
     res.setHeader('Content-Type', 'application/json');
-    res.status(200).json({ success: true, exportedAt: new Date().toISOString(), data: user });
+    res.status(200).json({ success: true, exportedAt: new Date().toISOString(), data: exportData });
   } catch (error) {
     console.error('Error exporting data:', error);
     res.status(500).json({ success: false, error: 'Server Error' });

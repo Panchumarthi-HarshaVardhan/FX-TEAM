@@ -104,4 +104,4 @@ investorProfileSchema.virtual('user', {
   justOne: true
 });
 
-module.exports = mongoose.model('InvestorProfile', investorProfileSchema);
+module.exports = require('../utils/firebaseModel').models.InvestorProfile;

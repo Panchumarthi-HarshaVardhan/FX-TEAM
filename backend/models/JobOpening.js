@@ -52,4 +52,4 @@ const jobOpeningSchema = new mongoose.Schema({
   timestamps: true
 });
 
-module.exports = mongoose.model('JobOpening', jobOpeningSchema);
+module.exports = require('../utils/firebaseModel').models.JobOpening;

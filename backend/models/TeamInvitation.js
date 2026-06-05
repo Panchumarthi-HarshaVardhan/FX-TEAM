@@ -40,4 +40,4 @@ teamInvitationSchema.index({ startupId: 1, recipientId: 1, status: 1 }, {
   partialFilterExpression: { status: 'pending' } 
 });
 
-module.exports = mongoose.model('TeamInvitation', teamInvitationSchema);
+module.exports = require('../utils/firebaseModel').models.TeamInvitation;

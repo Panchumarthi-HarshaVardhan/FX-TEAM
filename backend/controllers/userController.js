@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+﻿const { mongooseCompat: mongoose } = require('../utils/firebaseModel');
 const fs = require('fs');
 const path = require('path');
 const User = require('../models/User');
