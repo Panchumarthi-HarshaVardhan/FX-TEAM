@@ -13,28 +13,21 @@ export const SocketProvider = ({ children }) => {
 
 
   useEffect(() => {
-    if (user) {
-      const newSocket = io(API_URL);
-      const timer = setTimeout(() => {
-        setSocket(newSocket);
-      }, 0);
+    let newSocket = null;
+    const userId = user?._id;
+    if (userId) {
+      newSocket = io(API_URL);
+      setSocket(newSocket);
 
-      newSocket.emit('join_room', user._id);
+      newSocket.emit('join_room', userId);
 
       return () => {
-        clearTimeout(timer);
         newSocket.close();
       };
     } else {
-      if (socket) {
-        socket.close();
-        const timer = setTimeout(() => {
-          setSocket(null);
-        }, 0);
-        return () => clearTimeout(timer);
-      }
+      setSocket(null);
     }
-  }, [user, socket]);
+  }, [user?._id]);
 
   return (
     <SocketContext.Provider value={{ socket }}>

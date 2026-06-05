@@ -57,6 +57,8 @@ export default function ProfileSetupPage() {
   useEffect(() => {
     if (!loading && !user) {
       router.push('/auth/login');
+    } else if (!loading && user && !user.isEmailVerified) {
+      router.push('/verify-email');
     }
   }, [user, loading, router]);
 

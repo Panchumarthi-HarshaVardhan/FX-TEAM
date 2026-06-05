@@ -17,20 +17,27 @@ export const metadata = {
   description: 'Connect with founders, investors, and discover the next big thing.',
 };
 
+import { GoogleOAuthProvider } from '@react-oauth/google';
+
 export default function RootLayout({ children }) {
+  // Use the env variable or a placeholder if missing
+  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '652174003011-bckggmm7noi5tavg28s07lhj384n2avf.apps.googleusercontent.com';
+  
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} antialiased transition-colors duration-300`}>
-        <ThemeProvider>
-          <ToastProvider>
-            <AuthProvider>
-              <SocketProvider>
-                {children}
-                <FounderXAssistant />
-              </SocketProvider>
-            </AuthProvider>
-          </ToastProvider>
-        </ThemeProvider>
+        <GoogleOAuthProvider clientId={clientId}>
+          <ThemeProvider>
+            <ToastProvider>
+              <AuthProvider>
+                <SocketProvider>
+                  {children}
+                  <FounderXAssistant />
+                </SocketProvider>
+              </AuthProvider>
+            </ToastProvider>
+          </ThemeProvider>
+        </GoogleOAuthProvider>
       </body>
     </html>
   );

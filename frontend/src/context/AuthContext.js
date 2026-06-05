@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useToast } from './ToastContext';
 import { API_URL } from '@/utils/api';
 
@@ -27,8 +27,15 @@ export const AuthProvider = ({ children }) => {
   });
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
   const { addToast } = useToast();
   const hasCheckedRef = useRef(false);
+
+  useEffect(() => {
+    if (user && !user.isEmailVerified && user.role !== 'admin' && pathname?.startsWith('/dashboard')) {
+      router.push(`/verify-email?email=${encodeURIComponent(user.email)}`);
+    }
+  }, [user, pathname, router]);
 
 
   useEffect(() => {
@@ -45,10 +52,17 @@ export const AuthProvider = ({ children }) => {
     try {
       const storedToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
+      if (!storedToken) {
+        setUser(null);
+        setToken(null);
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch(`${API_URL}/api/auth/me`, {
         method: 'GET',
         headers: {
-          Authorization: storedToken ? `Bearer ${storedToken}` : '',
+          Authorization: `Bearer ${storedToken}`,
           Accept: 'application/json'
         },
         credentials: 'include',
@@ -129,18 +143,22 @@ export const AuthProvider = ({ children }) => {
         setUser(data);
         
         // Redirect to correct dashboard based on role or setup page
-        const needsSetup = !data.profileCompleted && !data.isProfileComplete && data.role !== 'admin';
-        if (needsSetup) {
-          router.push('/profile/setup');
+        if (!data.isEmailVerified && data.role !== 'admin') {
+          router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
         } else {
-          if (data.role === 'admin') {
-            router.push('/dashboard/admin');
-          } else if (data.role === 'investor') {
-            router.push('/dashboard/investor');
-          } else if (data.role === 'job_seeker') {
-            router.push('/dashboard/job-seeker');
+          const needsSetup = !data.profileCompleted && !data.isProfileComplete && data.role !== 'admin';
+          if (needsSetup) {
+            router.push('/profile/setup');
           } else {
-            router.push('/dashboard/founder');
+            if (data.role === 'admin') {
+              router.push('/dashboard/admin');
+            } else if (data.role === 'investor') {
+              router.push('/dashboard/investor');
+            } else if (data.role === 'job_seeker') {
+              router.push('/dashboard/job-seeker');
+            } else {
+              router.push('/dashboard/founder');
+            }
           }
         }
         
@@ -178,18 +196,22 @@ export const AuthProvider = ({ children }) => {
         setUser(data);
         
         // Redirect to correct dashboard based on role or setup page
-        const needsSetup = !data.profileCompleted && !data.isProfileComplete && data.role !== 'admin';
-        if (needsSetup) {
-          router.push('/profile/setup');
+        if (!data.isEmailVerified && data.role !== 'admin') {
+          router.push('/verify-email');
         } else {
-          if (data.role === 'admin') {
-            router.push('/dashboard/admin');
-          } else if (data.role === 'investor') {
-            router.push('/dashboard/investor');
-          } else if (data.role === 'job_seeker') {
-            router.push('/dashboard/job-seeker');
+          const needsSetup = !data.profileCompleted && !data.isProfileComplete && data.role !== 'admin';
+          if (needsSetup) {
+            router.push('/profile/setup');
           } else {
-            router.push('/dashboard/founder');
+            if (data.role === 'admin') {
+              router.push('/dashboard/admin');
+            } else if (data.role === 'investor') {
+              router.push('/dashboard/investor');
+            } else if (data.role === 'job_seeker') {
+              router.push('/dashboard/job-seeker');
+            } else {
+              router.push('/dashboard/founder');
+            }
           }
         }
         
@@ -199,6 +221,59 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error('Register request failed', error);
+      return { success: false, error: 'Network error. Please try again.' };
+    }
+  };
+
+  // Google Auth
+  const googleLogin = async (googleToken, role) => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/google`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ token: googleToken, role }),
+      });
+
+      const contentType = res.headers.get('content-type');
+      const data = contentType && contentType.includes('application/json') ? await res.json() : {};
+
+      if (res.ok && data.token) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('token', data.token);
+        }
+        setToken(data.token);
+        setUser(data);
+        
+        // Redirect to correct dashboard based on role or setup page
+        if (!data.isEmailVerified && data.role !== 'admin') {
+          router.push('/verify-email');
+        } else {
+          const needsSetup = !data.profileCompleted && !data.isProfileComplete && data.role !== 'admin';
+          if (needsSetup) {
+            router.push('/profile/setup');
+          } else {
+            if (data.role === 'admin') {
+              router.push('/dashboard/admin');
+            } else if (data.role === 'investor') {
+              router.push('/dashboard/investor');
+            } else if (data.role === 'job_seeker') {
+              router.push('/dashboard/job-seeker');
+            } else {
+              router.push('/dashboard/founder');
+            }
+          }
+        }
+        
+        return { success: true };
+      } else {
+        return { success: false, error: data.message || 'Google authentication failed' };
+      }
+    } catch (error) {
+      console.error('Google auth request failed', error);
       return { success: false, error: 'Network error. Please try again.' };
     }
   };
@@ -213,7 +288,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, token, login, logout, register, loading, refreshUser: checkUserLoggedIn }}>
+    <AuthContext.Provider value={{ user, setUser, token, login, logout, register, googleLogin, loading, refreshUser: checkUserLoggedIn }}>
       {children}
     </AuthContext.Provider>
   );
