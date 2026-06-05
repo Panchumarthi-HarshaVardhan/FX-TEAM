@@ -154,8 +154,8 @@ export const AuthProvider = ({ children }) => {
               router.push('/dashboard/admin');
             } else if (data.role === 'investor') {
               router.push('/dashboard/investor');
-            } else if (data.role === 'job_seeker') {
-              router.push('/dashboard/job-seeker');
+            } else if (data.role === 'user' || data.role === 'job_seeker') {
+              router.push('/dashboard/user');
             } else {
               router.push('/dashboard/founder');
             }
@@ -207,8 +207,8 @@ export const AuthProvider = ({ children }) => {
               router.push('/dashboard/admin');
             } else if (data.role === 'investor') {
               router.push('/dashboard/investor');
-            } else if (data.role === 'job_seeker') {
-              router.push('/dashboard/job-seeker');
+            } else if (data.role === 'user' || data.role === 'job_seeker') {
+              router.push('/dashboard/user');
             } else {
               router.push('/dashboard/founder');
             }
@@ -260,8 +260,8 @@ export const AuthProvider = ({ children }) => {
               router.push('/dashboard/admin');
             } else if (data.role === 'investor') {
               router.push('/dashboard/investor');
-            } else if (data.role === 'job_seeker') {
-              router.push('/dashboard/job-seeker');
+            } else if (data.role === 'job_seeker' || data.role === 'user') {
+              router.push('/dashboard/user');
             } else {
               router.push('/dashboard/founder');
             }

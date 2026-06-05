@@ -152,7 +152,7 @@ export default function VerificationCenter() {
                 <p className="text-sm mb-2">There was an issue with your documents. Please review our notes and re-upload.</p>
                 {user.adminVerificationNotes && (
                   <div className="bg-white/50 p-3 rounded border border-red-100 text-sm italic">
-                    " {user.adminVerificationNotes} "
+                    &ldquo; {user.adminVerificationNotes} &rdquo;
                   </div>
                 )}
               </div>

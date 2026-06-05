@@ -1319,7 +1319,7 @@ export default function MailboxPage() {
                     {user?.role === 'investor' && (
                       <option value="investment_request">Investment Request</option>
                     )}
-                    {user?.role === 'job_seeker' && (
+                    {(user?.role === 'user' || user?.role === 'job_seeker') && (
                       <>
                         <option value="application_request">Job opening application</option>
                         <option value="cofounder_request">Co-founder request</option>

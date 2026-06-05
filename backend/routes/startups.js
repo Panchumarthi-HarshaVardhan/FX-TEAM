@@ -22,12 +22,15 @@ const {
   unsaveStartup,
   getStartupJobs,
   createStartupJob,
-  createStartupRoleRequest
+  createStartupRoleRequest,
+  aiFilterStartups
 } = require('../controllers/startupController');
 
 const { protect, authorize, optionalProtect } = require('../middleware/auth');
 
 router.get('/:id/badge', getStartupBadge);
+
+router.post('/ai-filter', optionalProtect, aiFilterStartups);
 
 router
   .route('/')

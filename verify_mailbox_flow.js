@@ -1,6 +1,6 @@
 // Use global native fetch
 
-const API_URL = 'http://localhost:5000';
+const API_URL = 'http://localhost:3000';
 
 async function verifyMailbox() {
   try {
@@ -17,7 +17,7 @@ async function verifyMailbox() {
     const users = {
       founder: { name: 'Alice Founder', email: founderEmail, password: 'password123', role: 'founder' },
       investor: { name: 'Bob Investor', email: investorEmail, password: 'password123', role: 'investor' },
-      seeker: { name: 'Charlie Seeker', email: seekerEmail, password: 'password123', role: 'job_seeker' }
+      seeker: { name: 'Charlie Seeker', email: seekerEmail, password: 'password123', role: 'user' }
     };
 
     const tokens = {};

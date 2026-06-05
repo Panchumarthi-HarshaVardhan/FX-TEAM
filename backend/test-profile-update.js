@@ -6,7 +6,7 @@ const testProfileUpdate = async () => {
     const email = `update_test_${Date.now()}@example.com`;
     
     // 1. Register User
-    const registerRes = await axios.post('http://localhost:5000/api/auth/register', {
+    const registerRes = await axios.post('http://localhost:3000/api/auth/register', {
       name: 'Update Test User',
       email: email,
       password: 'password123',
@@ -33,7 +33,7 @@ const testProfileUpdate = async () => {
       coverPhoto: 'https://res.cloudinary.com/demo/image/upload/cover.jpg'
     };
     
-    const updateRes = await axios.put('http://localhost:5000/api/users/update', updatePayload, {
+    const updateRes = await axios.put('http://localhost:3000/api/users/update', updatePayload, {
       headers: { Authorization: `Bearer ${token}` }
     });
     
@@ -68,7 +68,7 @@ const testProfileUpdate = async () => {
     
     // 3. Fetch from GET /api/users/me
     console.log('\n=== Testing GET /api/users/me (Persistence check) ===');
-    const meRes = await axios.get('http://localhost:5000/api/users/me', {
+    const meRes = await axios.get('http://localhost:3000/api/users/me', {
       headers: { Authorization: `Bearer ${token}` }
     });
     

@@ -291,13 +291,16 @@ exports.getAdminDashboard = async (req, res) => {
     ]);
     const founderCount = roleCounts.find(r => r._id === 'founder')?.count || 0;
     const investorCount = roleCounts.find(r => r._id === 'investor')?.count || 0;
-    const jobSeekerCount = roleCounts.find(r => r._id === 'job_seeker')?.count || 0;
+    const userCount = roleCounts.find(r => r._id === 'user')?.count || 0;
+    const oldJobSeekerCount = roleCounts.find(r => r._id === 'job_seeker')?.count || 0;
+    const jobSeekerCount = userCount + oldJobSeekerCount;
     const adminCount = roleCounts.find(r => r._id === 'admin')?.count || 0;
 
     const roleDistribution = {
       founder: founderCount,
       investor: investorCount,
       jobSeeker: jobSeekerCount,
+      user: userCount,
       admin: adminCount
     };
 

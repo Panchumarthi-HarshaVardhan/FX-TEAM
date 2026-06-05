@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const API_URL = 'http://localhost:5000/api/users';
+const API_URL = 'http://localhost:3000/api/users';
 
 async function test() {
   try {
@@ -15,7 +15,7 @@ async function test() {
     if (users.length === 0) {
       console.log('No users found. Creating one...');
       // Register a user
-      const registerRes = await axios.post('http://localhost:5000/api/auth/register', {
+      const registerRes = await axios.post('http://localhost:3000/api/auth/register', {
         name: 'Test User',
         email: 'test@example.com',
         password: 'password123',

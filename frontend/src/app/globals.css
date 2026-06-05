@@ -16,12 +16,12 @@
 }
 
 .dark {
-  --background: #0F172A;
+  --background: #020617; /* Slate 950 for deeper, richer background */
   --foreground: #F8FAFC;
-  --card: #1E293B;
-  --card-border: #334155;
-  --muted: #94A3B8;
-  --muted-light: #475569;
+  --card: #0A0F1C; /* Custom deep blue-black for cards */
+  --card-border: #1E293B; /* Slate 800 for subtle borders */
+  --muted: #94A3B8; /* Slate 400 */
+  --muted-light: #1E293B; /* Slate 800 */
 }
 
 .dark body {
@@ -32,11 +32,19 @@
 .dark .card {
   background: var(--card);
   border-color: var(--card-border);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
+}
+
+.dark .card:hover {
+  border-color: rgba(10, 102, 194, 0.4);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
 }
 
 .dark .glassmorphism {
-  background: rgba(15, 23, 42, 0.9);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(2, 6, 23, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 @theme inline {
@@ -167,7 +175,7 @@ html {
 .dark .admin-panel div.bg-slate-50,
 .dark .admin-panel table th,
 .dark .admin-panel table tr {
-  background-color: #0F172A !important;
+  background-color: var(--background) !important;
   color: var(--foreground) !important;
   border-color: var(--card-border) !important;
 }
@@ -194,12 +202,12 @@ html {
 }
 
 .dark .admin-panel button.bg-slate-100 {
-  background-color: #1E293B !important;
+  background-color: var(--card-border) !important;
   color: var(--foreground) !important;
 }
 
 .dark .admin-panel button.bg-slate-100:hover {
-  background-color: #334155 !important;
+  background-color: var(--muted-light) !important;
 }
 
 .dark .admin-panel .border-slate-100,

@@ -4,7 +4,7 @@ import { AuthProvider } from '../context/AuthContext';
 import { SocketProvider } from '../context/SocketContext';
 import { ToastProvider } from '../context/ToastContext';
 import { ThemeProvider } from '../context/ThemeContext';
-import FounderXAssistant from '../components/FounderXAssistant';
+import ClientAssistantWrapper from '../components/ClientAssistantWrapper';
 
 const inter = Inter({
   variable: '--font-inter',
@@ -32,7 +32,7 @@ export default function RootLayout({ children }) {
               <AuthProvider>
                 <SocketProvider>
                   {children}
-                  <FounderXAssistant />
+                  <ClientAssistantWrapper />
                 </SocketProvider>
               </AuthProvider>
             </ToastProvider>

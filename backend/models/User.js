@@ -36,7 +36,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['job_seeker', 'founder', 'investor', 'admin'],
+    enum: ['user', 'founder', 'investor', 'admin'],
     default: 'founder'
   },
   profileImage: {
@@ -142,6 +142,16 @@ const userSchema = new mongoose.Schema({
       type: Boolean,
       default: true
     }
+  },
+  notificationPreferences: {
+    emailNotifications: { type: Boolean, default: true },
+    pushNotifications: { type: Boolean, default: true },
+    newFollower: { type: Boolean, default: true },
+    newMessage: { type: Boolean, default: true },
+    investorInterest: { type: Boolean, default: true },
+    startupUpdates: { type: Boolean, default: true },
+    weeklyDigest: { type: Boolean, default: false },
+    marketingEmails: { type: Boolean, default: false }
   },
   skills: [{
     type: String,
@@ -382,7 +392,7 @@ userSchema.methods.toPublicJSON = function() {
     data.roleProfile = this.founderProfile;
   } else if (this.role === 'investor' && this.investorProfile) {
     data.roleProfile = this.investorProfile;
-  } else if (this.role === 'job_seeker' && this.jobSeekerProfile) {
+  } else if (this.role === 'user' && this.jobSeekerProfile) {
     data.roleProfile = this.jobSeekerProfile;
   }
 

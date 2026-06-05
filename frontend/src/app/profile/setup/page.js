@@ -87,8 +87,8 @@ export default function ProfileSetupPage() {
       let endpoint = '';
       let payload = {};
 
-      if (role === 'job_seeker') {
-        endpoint = 'http://localhost:3000/api/profile/job-seeker';
+      if (role === 'user' || role === 'job_seeker') {
+        endpoint = 'http://localhost:3000/api/profile/user';
         payload = {
           profilePhoto: formData.profilePhoto,
           bio: formData.bio,
@@ -156,8 +156,8 @@ export default function ProfileSetupPage() {
         addToast('Profile setup complete! Welcome to FounderX!', 'success');
         
         // Redirect to correct dashboard
-        if (role === 'job_seeker') {
-          router.push('/dashboard/job-seeker');
+        if (role === 'user' || role === 'job_seeker') {
+          router.push('/dashboard/user');
         } else if (role === 'founder') {
           router.push('/dashboard/founder');
         } else if (role === 'investor') {
@@ -175,7 +175,7 @@ export default function ProfileSetupPage() {
   };
 
   const isStepValid = () => {
-    if (role === 'job_seeker') {
+    if (role === 'user' || role === 'job_seeker') {
       if (step === 1) {
         return formData.bio.trim() && formData.location.trim() && formData.skills.trim();
       }
@@ -238,7 +238,7 @@ export default function ProfileSetupPage() {
           {/* ======================================================== */}
           {/* 1. JOB SEEKER SETUP STEPS */}
           {/* ======================================================== */}
-          {role === 'job_seeker' && (
+          {(role === 'user' || role === 'job_seeker') && (
             <div className="space-y-5">
               {step === 1 && (
                 <div className="space-y-4">

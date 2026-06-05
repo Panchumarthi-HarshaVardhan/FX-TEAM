@@ -690,8 +690,8 @@ exports.setupJobSeekerProfile = async (req, res) => {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    if (user.role !== 'job_seeker') {
-      return res.status(400).json({ success: false, error: 'User is not registered as a Job Seeker' });
+    if (user.role !== 'user' && user.role !== 'job_seeker') {
+      return res.status(400).json({ success: false, error: 'User is not registered as a User / Job Seeker' });
     }
 
     const {
@@ -745,7 +745,7 @@ exports.setupJobSeekerProfile = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Job Seeker profile completed successfully',
+      message: 'Profile completed successfully',
       user: user.toPublicJSON(),
       profile
     });

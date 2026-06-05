@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:3000/api';
 
 async function runTests() {
   try {
@@ -30,7 +30,7 @@ async function runTests() {
       name: `Job Seeker ${uniqueId}`,
       email: `seeker_${uniqueId}@test.com`,
       password: 'password123',
-      role: 'job_seeker',
+      role: 'user',
       username: `seeker_${uniqueId}`
     };
 
@@ -117,7 +117,7 @@ async function runTests() {
     if (!res.data.data.permissions.canSaved) throw new Error('Saved status not updated to true');
 
     // Check job seeker saved startups endpoint
-    res = await request(`${API_URL}/job-seeker/saved-startups`, 'GET', null, jobSeekerToken);
+    res = await request(`${API_URL}/user/saved-startups`, 'GET', null, jobSeekerToken);
     const hasSavedStartup = res.data.data.some(s => s._id === startupId);
     if (!hasSavedStartup) throw new Error('Saved startup not returned by job seeker saved endpoint');
     console.log('   Save state successfully verified.');
@@ -134,7 +134,7 @@ async function runTests() {
     console.log(`   Application submitted: ${applicationId}`);
 
     // Check applications list
-    res = await request(`${API_URL}/job-seeker/applications`, 'GET', null, jobSeekerToken);
+    res = await request(`${API_URL}/user/applications`, 'GET', null, jobSeekerToken);
     const application = res.data.data.find(app => app._id === applicationId);
     if (!application) throw new Error('Submitted application not found in list');
     if (application.status !== 'pending') throw new Error('Initial application status is not pending');

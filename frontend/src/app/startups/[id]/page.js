@@ -164,7 +164,7 @@ function StartupHeader({ startup, isFollowing, onFollow, onInterest, onApplyRequ
                 Investor Interested
               </button>
             )}
-            {user && user.role === 'job_seeker' && (
+            {user && (user.role === 'user' || user.role === 'job_seeker') && (
               <button onClick={onApplyRequest} className="btn-primary flex items-center gap-1 font-semibold">
                 <Sparkles className="h-4 w-4" />
                 Apply / Send Request
@@ -341,7 +341,7 @@ function InvestorPanel({ funding }) {
         </div>
       </div>
       
-      {(!user || user.role !== 'job_seeker') && (
+      {(!user || (user.role !== 'user' && user.role !== 'job_seeker')) && (
         <div className="flex flex-wrap gap-3">
           <button className="btn-primary flex items-center gap-1">
             <Eye className="h-4 w-4" />

@@ -20,6 +20,8 @@ export default function Navbar({ dark = false }) {
   const dropdownRef = useRef(null);
   const createDropdownRef = useRef(null);
   const { user, loading, logout, token } = useAuth();
+  const showInvestorsNav =
+    user?.role === "founder" || user?.role === "admin";
   const { socket } = useSocket();
   const { isDark, toggleTheme } = useTheme();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -239,6 +241,14 @@ export default function Navbar({ dark = false }) {
         fetchMailUnreadCount();
       });
       
+      socket.on('mail_read', () => {
+        fetchMailUnreadCount();
+      });
+
+      socket.on('mail_unread', () => {
+        fetchMailUnreadCount();
+      });
+
       socket.on('new_message_request', () => {
         fetchConversationsForBadge();
       });
@@ -250,6 +260,8 @@ export default function Navbar({ dark = false }) {
     return () => {
       if (socket) {
         socket.off('new_notification');
+        socket.off('mail_read');
+        socket.off('mail_unread');
         socket.off('new_message_request');
         socket.off('request_accepted');
       }
@@ -299,9 +311,11 @@ export default function Navbar({ dark = false }) {
             <Link href="/startups" className={getLinkClass('/startups')}>
               Startups
             </Link>
-            <Link href="/investors" className={getLinkClass('/investors')}>
-              Investors
-            </Link>
+            {showInvestorsNav && (
+              <Link href="/investors" className={getLinkClass('/investors')}>
+                Investors
+              </Link>
+            )}
             <Link href="/shop" className={`${getLinkClass('/shop')} flex items-center gap-1`}>
               <ShoppingBag className="h-4 w-4" />
               Shop
@@ -482,9 +496,11 @@ export default function Navbar({ dark = false }) {
             <Link href="/startups" className={getMobileLinkClass('/startups')}>
               Startups
             </Link>
-            <Link href="/investors" className={getMobileLinkClass('/investors')}>
-              Investors
-            </Link>
+            {showInvestorsNav && (
+              <Link href="/investors" className={getMobileLinkClass('/investors')}>
+                Investors
+              </Link>
+            )}
             <Link href="/shop" className={getMobileLinkClass('/shop')}>
               Shop
             </Link>

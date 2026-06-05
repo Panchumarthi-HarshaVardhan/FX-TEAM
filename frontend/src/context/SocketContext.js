@@ -14,18 +14,33 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     let newSocket = null;
+    let timer1 = null;
+    let timer2 = null;
+    let timer3 = null;
+
     const userId = user?._id;
     if (userId) {
       newSocket = io(API_URL);
-      setSocket(newSocket);
+      timer1 = setTimeout(() => {
+        setSocket(newSocket);
+      }, 0);
 
       newSocket.emit('join_room', userId);
 
       return () => {
+        if (timer1) clearTimeout(timer1);
         newSocket.close();
+        timer2 = setTimeout(() => {
+          setSocket(null);
+        }, 0);
       };
     } else {
-      setSocket(null);
+      timer3 = setTimeout(() => {
+        setSocket(null);
+      }, 0);
+      return () => {
+        if (timer3) clearTimeout(timer3);
+      };
     }
   }, [user?._id]);
 

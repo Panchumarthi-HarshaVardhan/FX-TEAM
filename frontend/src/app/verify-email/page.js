@@ -216,7 +216,7 @@ function VerifyEmailContent() {
 
         {status !== 'success' && (
           <div className="mt-8 text-sm text-gray-500">
-            Didn't receive the email?{' '}
+            Didn&apos;t receive the email?{' '}
             <button 
               onClick={handleResend}
               disabled={resending}

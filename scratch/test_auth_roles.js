@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:3000/api';
 
 async function runAuthTests() {
   try {
@@ -24,7 +24,7 @@ async function runAuthTests() {
       fullName: `Job Seeker ${uniqueId}`,
       email: `seeker${uniqueId}@test.com`,
       password: 'password123',
-      role: 'job_seeker'
+      role: 'user'
     };
     const founderReg = {
       fullName: `Founder ${uniqueId}`,
@@ -82,7 +82,7 @@ async function runAuthTests() {
       expectedSalary: '$80k'
     };
 
-    res = await request(`${API_URL}/profile/job-seeker`, 'POST', seekerSetup, seekerToken);
+    res = await request(`${API_URL}/profile/user`, 'POST', seekerSetup, seekerToken);
     console.log('   Job Seeker Setup response:', res.status, res.data.message);
     if (res.status !== 200) throw new Error('Failed to complete Job Seeker Setup');
     if (res.data.user.profileCompleted !== true) throw new Error('Expected profileCompleted to become true after setup');

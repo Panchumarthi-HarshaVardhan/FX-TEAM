@@ -353,6 +353,12 @@ exports.markRead = async (req, res) => {
     mail.isRead = true;
     await mail.save();
 
+    // Emit socket event to recipient's private room
+    const io = req.app.get('io');
+    if (io) {
+      io.to(req.user.id).emit('mail_read', { mailId: mail._id });
+    }
+
     res.status(200).json({ success: true, data: mail });
   } catch (error) {
     console.error(error);
@@ -376,6 +382,12 @@ exports.markUnread = async (req, res) => {
 
     mail.isRead = false;
     await mail.save();
+
+    // Emit socket event to recipient's private room
+    const io = req.app.get('io');
+    if (io) {
+      io.to(req.user.id).emit('mail_unread', { mailId: mail._id });
+    }
 
     res.status(200).json({ success: true, data: mail });
   } catch (error) {

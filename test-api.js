@@ -1,6 +1,6 @@
 const fetch = require('node-fetch');
 
-const API_URL = 'http://localhost:5000';
+const API_URL = 'http://localhost:3000';
 
 async function testAPI() {
   try {

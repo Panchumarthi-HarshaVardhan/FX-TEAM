@@ -8,8 +8,9 @@ const mongoose = require('mongoose');
 const FounderProfile = require('../models/FounderProfile');
 const Follow = require('../models/Follow');
 const SavedItem = require('../models/SavedItem');
-const StartupRoleRequest = require('../models/StartupRoleRequest');
 const Mail = require('../models/Mail');
+const axios = require('axios');
+
 
 
 
@@ -144,7 +145,7 @@ const getStartupPermissions = async (startup, user) => {
     console.error('Mutual follow check error:', err);
   }
 
-  if (user.role === 'job_seeker') {
+  if (user.role === 'user' || user.role === 'job_seeker') {
     // Check if there is an accepted job application by this job seeker for this startup
     let hasAcceptedApplication = false;
     try {
@@ -260,52 +261,95 @@ const getStartupPermissions = async (startup, user) => {
 // @access  Public
 exports.getStartups = async (req, res) => {
   try {
-    let query;
-
-    // Copy req.query
-    const reqQuery = { ...req.query };
-
-    // Fields to exclude
-    const removeFields = ['select', 'sort', 'page', 'limit', 'search'];
-
-    // Loop over removeFields and delete them from reqQuery
-    removeFields.forEach(param => delete reqQuery[param]);
-
-    // Create query string
-    let queryStr = JSON.stringify(reqQuery);
-
-    // Create operators ($gt, $gte, etc)
-    queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
-
-    // Parse query string to JSON
-    let queryObj = JSON.parse(queryStr);
+    const queryObj = {};
 
     // Only show public and active startups
     queryObj.is_public = true;
     queryObj.is_active = true;
 
-    // Add search functionality
+    // Search functionality
     if (req.query.search) {
       const searchRegex = { $regex: req.query.search, $options: 'i' };
-      queryObj.$or = [
+      
+      // Find matching users for founder name search
+      const matchingUsers = await mongoose.model('User').find({
+        name: searchRegex
+      }).select('_id');
+      const matchingUserIds = matchingUsers.map(u => u._id);
+
+      const searchConditions = [
         { name: searchRegex },
         { oneLinePitch: searchRegex },
-        { industry: searchRegex }
+        { description: searchRegex },
+        { industry: searchRegex },
+        { stage: searchRegex },
+        { 'location.city': searchRegex },
+        { 'location.country': searchRegex }
       ];
+
+      if (matchingUserIds.length > 0) {
+        searchConditions.push({ founderId: { $in: matchingUserIds } });
+      }
+
+      if (req.query.search.toLowerCase() === 'remote') {
+        searchConditions.push({ 'location.remote': true });
+      }
+
+      queryObj.$or = searchConditions;
     }
 
-    // Finding resource
-    query = Startup.find(queryObj).populate('founderId', 'name email profileImage');
-
-    // Select Fields
-    if (req.query.select) {
-      const fields = req.query.select.split(',').join(' ');
-      query = query.select(fields);
+    // Filter by Industry
+    if (req.query.industry && req.query.industry !== 'All') {
+      queryObj.industry = { $regex: new RegExp('^' + req.query.industry + '$', 'i') };
     }
 
-    // Sort
-    if (req.query.sort) {
-      const sortBy = req.query.sort.split(',').join(' ');
+    // Filter by Stage
+    if (req.query.stage && req.query.stage !== 'All') {
+      queryObj.stage = req.query.stage.toLowerCase();
+    }
+
+    // Filter by Location
+    if (req.query.location && req.query.location.trim() !== '') {
+      const locRegex = { $regex: req.query.location, $options: 'i' };
+      const locationConditions = [
+        { 'location.city': locRegex },
+        { 'location.country': locRegex }
+      ];
+      if (req.query.location.toLowerCase() === 'remote') {
+        locationConditions.push({ 'location.remote': true });
+      }
+      queryObj.$and = queryObj.$and || [];
+      queryObj.$and.push({ $or: locationConditions });
+    }
+
+    // Filter by Verified
+    if (req.query.verified === 'true') {
+      queryObj.$and = queryObj.$and || [];
+      queryObj.$and.push({
+        $or: [
+          { verified: true },
+          { isVerified: true },
+          { is_verified: true }
+        ]
+      });
+    }
+
+    // If queryObj.$and is empty, delete it
+    if (queryObj.$and && queryObj.$and.length === 0) {
+      delete queryObj.$and;
+    }
+
+    // Let's create query
+    let query = Startup.find(queryObj).populate('founderId', 'name email profileImage');
+
+    // Sorting (except most_followed which is done in memory after population)
+    const sortVal = req.query.sort;
+    if (sortVal === 'most_viewed') {
+      query = query.sort('-metrics.views');
+    } else if (sortVal === 'recently_created') {
+      query = query.sort('-createdAt');
+    } else if (sortVal && sortVal !== 'most_followed') {
+      const sortBy = sortVal.split(',').join(' ');
       query = query.sort(sortBy);
     } else {
       query = query.sort('-createdAt');
@@ -313,18 +357,17 @@ exports.getStartups = async (req, res) => {
 
     // Pagination
     const page = parseInt(req.query.page, 10) || 1;
-    const limit = parseInt(req.query.limit, 10) || 10;
+    const limit = parseInt(req.query.limit, 10) || 1000; // default to 1000 so all show up!
     const startIndex = (page - 1) * limit;
     const endIndex = page * limit;
     const total = await Startup.countDocuments(queryObj);
 
     query = query.skip(startIndex).limit(limit);
 
-    // Executing query
     const startups = await query;
 
-    // Convert to public JSON with permission object (both nested and flat-compatible)
-    const startupsWithStatus = await Promise.all(startups.map(async (startup) => {
+    // Convert to public JSON with permissions
+    let startupsWithStatus = await Promise.all(startups.map(async (startup) => {
       const publicStartup = startup.toPublicJSON(req.user ? req.user : null);
       const permissions = await getStartupPermissions(startup, req.user);
       return {
@@ -334,26 +377,36 @@ exports.getStartups = async (req, res) => {
       };
     }));
 
-    // Pagination result
-    const pagination = {};
-
-    if (endIndex < total) {
-      pagination.next = {
-        page: page + 1,
-        limit
-      };
+    // In-memory sort for most_followed (needs followerCount from public JSON or followers length)
+    if (sortVal === 'most_followed') {
+      startupsWithStatus.sort((a, b) => {
+        const aCount = a.followerCount || 0;
+        const bCount = b.followerCount || 0;
+        return bCount - aCount;
+      });
+    } else if (sortVal === 'most_viewed') {
+      // Just in case Mongoose sorting by nested fields isn't reliable, sort here too
+      startupsWithStatus.sort((a, b) => {
+        const aViews = (a.metrics && a.metrics.views) || 0;
+        const bViews = (b.metrics && b.metrics.views) || 0;
+        return bViews - aViews;
+      });
+    } else if (sortVal === 'recently_created') {
+      startupsWithStatus.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     }
 
+    // Pagination result
+    const pagination = {};
+    if (endIndex < total) {
+      pagination.next = { page: page + 1, limit };
+    }
     if (startIndex > 0) {
-      pagination.prev = {
-        page: page - 1,
-        limit
-      };
+      pagination.prev = { page: page - 1, limit };
     }
 
     res.status(200).json({
       success: true,
-      count: startups.length,
+      count: startupsWithStatus.length,
       pagination,
       data: startupsWithStatus
     });
@@ -362,6 +415,137 @@ exports.getStartups = async (req, res) => {
     res.status(400).json({ success: false, error: 'Server Error' });
   }
 };
+
+// Helper to build AI Filter Prompt
+function buildAIFilterPrompt(userQuery) {
+  return `You are an AI filter converter for a startup platform. Your job is to convert a natural language search query into a structured JSON filter object for searching startups.
+
+User Query: "${userQuery}"
+
+Allowed Industries (if specified, map to one of these or leave as is if not matching):
+"Technology", "Healthcare", "Finance", "Education", "E-commerce", "SaaS", "AI/ML", "Blockchain", "CleanTech", "FoodTech", "Fashion", "Real Estate", "Transportation", "Other"
+
+Allowed Stages:
+"idea", "mvp", "first_customer", "revenue", "funded"
+
+Allowed Sort values:
+"recently_created", "most_viewed", "most_followed"
+
+Output a strictly valid JSON object (and nothing else) in the following format:
+{
+  "industry": string | null, // e.g. "AI/ML", "Finance", or null if not specified
+  "stage": string | null, // must be one of "idea", "mvp", "first_customer", "revenue", "funded", or null
+  "location": string | null, // location string like a city/country/remote, or null
+  "verified": boolean | null, // true if user requested verified/approved startups, false/null otherwise
+  "sort": string | null, // "recently_created", "most_viewed", "most_followed", or null
+  "search": string | null // any remaining keywords to search for in startup name/founder/pitch, or null
+}
+
+Examples:
+- "show fintech startups in idea stage":
+  {"industry": "Finance", "stage": "idea", "location": null, "verified": null, "sort": null, "search": null}
+- "show startups looking for investors":
+  {"industry": null, "stage": null, "location": null, "verified": null, "sort": null, "search": "investors"}
+- "show verified AI startups":
+  {"industry": "AI/ML", "stage": null, "location": null, "verified": true, "sort": null, "search": null}
+- "show startups created recently":
+  {"industry": null, "stage": null, "location": null, "verified": null, "sort": "recently_created", "search": null}
+- "SaaS startups in remote location":
+  {"industry": "SaaS", "stage": null, "location": "remote", "verified": null, "sort": null, "search": null}
+- "most viewed healthcare startups":
+  {"industry": "Healthcare", "stage": null, "location": null, "verified": null, "sort": "most_viewed", "search": null}
+
+Return ONLY the raw JSON block. Do not include markdown formatting or extra text.`;
+}
+
+// Helper to parse JSON from text containing markdown fences
+function parseJsonFromText(text) {
+  let cleaned = text.replace(/\`\`\`(?:json)?\s*/gi, '').replace(/\`\`\`/g, '').trim();
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start !== -1 && end !== -1 && end > start) {
+    cleaned = cleaned.slice(start, end + 1);
+  }
+  return JSON.parse(cleaned);
+}
+
+// @desc    Convert natural language query to filters
+// @route   POST /api/startups/ai-filter
+// @access  Public/Private
+exports.aiFilterStartups = async (req, res) => {
+  const { query } = req.body;
+  if (!query) {
+    return res.status(400).json({ success: false, error: 'Query is required' });
+  }
+
+  const groqKey = process.env.GROQ_API_KEY;
+  if (!groqKey || groqKey.length < 10) {
+    // Fallback: return search filter with the query string itself
+    return res.status(200).json({
+      success: true,
+      data: {
+        industry: null,
+        stage: null,
+        location: null,
+        verified: null,
+        sort: null,
+        search: query
+      },
+      fallback: true
+    });
+  }
+
+  try {
+    const prompt = buildAIFilterPrompt(query);
+    const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.1,
+      max_tokens: 150
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${groqKey}`
+      }
+    });
+
+    const aiText = response.data.choices[0].message.content;
+    let filters = {
+      industry: null,
+      stage: null,
+      location: null,
+      verified: null,
+      sort: null,
+      search: query
+    };
+
+    try {
+      filters = parseJsonFromText(aiText);
+    } catch (parseErr) {
+      console.error('Failed to parse AI response as JSON:', aiText, parseErr);
+    }
+
+    res.status(200).json({
+      success: true,
+      data: filters
+    });
+  } catch (error) {
+    console.error('Groq AI filter error:', error.response?.data || error.message);
+    res.status(200).json({
+      success: true,
+      data: {
+        industry: null,
+        stage: null,
+        location: null,
+        verified: null,
+        sort: null,
+        search: query
+      },
+      fallback: true
+    });
+  }
+};
+
 
 // @desc    Get single startup
 // @route   GET /api/startups/:id
@@ -1144,9 +1328,9 @@ exports.createStartupRoleRequest = async (req, res) => {
   try {
     const { requestType, roleTitle, skills, resume, portfolioLink, github, linkedin, message, availabilityDate, expectedSalary, reasonToJoin } = req.body;
     
-    // Check if user is job_seeker
-    if (req.user.role !== 'job_seeker') {
-      return res.status(403).json({ success: false, error: 'Only job seekers can send startup role requests' });
+    // Check if user is user / job_seeker
+    if (req.user.role !== 'user' && req.user.role !== 'job_seeker') {
+      return res.status(403).json({ success: false, error: 'Only users can send startup role requests' });
     }
 
     const startup = await Startup.findById(req.params.id);

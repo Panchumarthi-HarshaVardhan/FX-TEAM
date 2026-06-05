@@ -26,7 +26,10 @@ const cookieOptions = {
 // @access  Public
 exports.register = async (req, res) => {
   try {
-    const { fullName, name, email, password, role } = req.body;
+    let { fullName, name, email, password, role } = req.body;
+    if (role === 'job_seeker') {
+      role = 'user';
+    }
 
     const chosenName = fullName || name;
     if (!chosenName) {
@@ -38,8 +41,8 @@ exports.register = async (req, res) => {
     }
 
     // Validate role
-    if (role && !['job_seeker', 'founder', 'investor'].includes(role)) {
-      return res.status(400).json({ message: 'Invalid role. Must be job_seeker, founder or investor.' });
+    if (role && !['user', 'founder', 'investor'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role. Must be user, founder or investor.' });
     }
 
     let userExists = await User.findOne({ email });
@@ -162,19 +165,27 @@ exports.login = async (req, res) => {
       .populate('investorProfile')
       .populate('jobSeekerProfile');
 
-    if (user && (await user.comparePassword(password))) {
-      // Check if email is verified
-      if (!user.isEmailVerified) {
-        return res.status(403).json({ message: 'Please verify your email address to log in. Check your inbox (or spam folder) for the verification link.' });
+    if (user) {
+      if (!user.passwordHash && user.googleId) {
+        return res.status(400).json({ message: 'This email is registered with Google. Please use "Continue with Google" to log in.' });
       }
 
-      const token = generateToken(user._id);
-      const userPublic = user.toPublicJSON();
-      userPublic.token = token;
+      if (await user.comparePassword(password)) {
+        // Check if email is verified
+        if (!user.isEmailVerified) {
+          return res.status(403).json({ message: 'Please verify your email address to log in. Check your inbox (or spam folder) for the verification link.' });
+        }
 
-      res
-        .cookie('token', token, cookieOptions)
-        .json(userPublic);
+        const token = generateToken(user._id);
+        const userPublic = user.toPublicJSON();
+        userPublic.token = token;
+
+        res
+          .cookie('token', token, cookieOptions)
+          .json(userPublic);
+      } else {
+        res.status(401).json({ message: 'Invalid credentials' });
+      }
     } else {
       res.status(401).json({ message: 'Invalid credentials' });
     }
@@ -347,9 +358,17 @@ exports.googleAuth = async (req, res) => {
       .populate('jobSeekerProfile');
 
     if (!user) {
+      // If no role is provided, this is a login attempt. Do not automatically register a new user.
+      if (!role) {
+        return res.status(404).json({ message: 'Account does not exist. Please sign up first.' });
+      }
+
       // New user - requires role if we enforce it, or default to founder
-      const newRole = role || 'founder';
-      if (!['job_seeker', 'founder', 'investor'].includes(newRole)) {
+      let newRole = role;
+      if (newRole === 'job_seeker') {
+        newRole = 'user';
+      }
+      if (!['user', 'founder', 'investor'].includes(newRole)) {
         return res.status(400).json({ message: 'Invalid role provided' });
       }
 
@@ -383,6 +402,11 @@ exports.googleAuth = async (req, res) => {
         profileCompleted: false
       });
     } else {
+      // Existing user
+      if (user.passwordHash && !user.googleId) {
+        return res.status(400).json({ message: 'This email is already registered. Please log in using your email and password.' });
+      }
+
       // Existing user, just update google verification fields
       user.googleId = googleId;
       user.googleVerified = true;

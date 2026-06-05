@@ -127,7 +127,7 @@ function StartupCard({ startup, onFollow, onSave, onViewJobs, onShowInterest, on
             <span>{startup.views || 0} views</span>
           </div>
           <span className="text-primary font-bold">
-            {startup.fundingRequired > 0 && currentUser?.role !== 'job_seeker' ? `$${(startup.fundingRequired / 1000).toFixed(0)}K needed` : 'Bootstrapped'}
+            {startup.fundingRequired > 0 && currentUser?.role !== 'user' && currentUser?.role !== 'job_seeker' ? `$${(startup.fundingRequired / 1000).toFixed(0)}K needed` : 'Bootstrapped'}
           </span>
         </div>
 
@@ -166,7 +166,7 @@ function StartupCard({ startup, onFollow, onSave, onViewJobs, onShowInterest, on
               </button>
             )}
 
-            {permissions.canInvest && currentUser?.role !== 'job_seeker' && (
+            {permissions.canInvest && currentUser?.role !== 'user' && currentUser?.role !== 'job_seeker' && (
               <button 
                 onClick={() => onShowInterest(startup)}
                 className="flex-1 px-3 py-2 bg-indigo-50 border border-indigo-150 text-indigo-700 font-bold text-xs rounded-xl hover:bg-indigo-100 transition"
@@ -252,6 +252,19 @@ export default function StartupsPage() {
   const { addToast } = useToast();
   
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [industryFilter, setIndustryFilter] = useState('All');
+  const [stageFilter, setStageFilter] = useState('All');
+  const [locationFilter, setLocationFilter] = useState('');
+  const [debouncedLocationFilter, setDebouncedLocationFilter] = useState('');
+  const [verifiedFilter, setVerifiedFilter] = useState(false);
+  const [sortFilter, setSortFilter] = useState('recently_created');
+  
+  const [isAiMode, setIsAiMode] = useState(false);
+  const [aiQuery, setAiQuery] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const [isFilterActive, setIsFilterActive] = useState(false);
+
   const [startups, setStartups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -280,23 +293,60 @@ export default function StartupsPage() {
   });
   const [submittingApp, setSubmittingApp] = useState(false);
 
+  const industries = [
+    'Technology', 'Healthcare', 'Finance', 'Education', 'E-commerce', 
+    'SaaS', 'AI/ML', 'Blockchain', 'CleanTech', 'FoodTech', 
+    'Fashion', 'Real Estate', 'Transportation', 'Other'
+  ];
+
+  // Debouncing search term
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
+  // Debouncing location filter
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedLocationFilter(locationFilter);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [locationFilter]);
+
+  // Fetch startups on state updates
   useEffect(() => {
     fetchStartups();
-    if (token && user?.role === 'job_seeker') {
+  }, [token, debouncedSearchTerm, industryFilter, stageFilter, debouncedLocationFilter, verifiedFilter, sortFilter]);
+
+  // Fetch applications
+  useEffect(() => {
+    if (token && (user?.role === 'user' || user?.role === 'job_seeker')) {
       fetchAppliedJobs();
     }
   }, [token, user]);
 
   const fetchStartups = async () => {
+    setLoading(true);
     try {
       const headers = {};
       if (token) {
         headers.Authorization = `Bearer ${token}`;
       }
-      const res = await fetch(`${API_URL}/api/startups`, { headers });
+      
+      const queryParams = new URLSearchParams();
+      if (debouncedSearchTerm) queryParams.append('search', debouncedSearchTerm);
+      if (industryFilter && industryFilter !== 'All') queryParams.append('industry', industryFilter);
+      if (stageFilter && stageFilter !== 'All') queryParams.append('stage', stageFilter);
+      if (debouncedLocationFilter) queryParams.append('location', debouncedLocationFilter);
+      if (verifiedFilter) queryParams.append('verified', 'true');
+      if (sortFilter) queryParams.append('sort', sortFilter);
+
+      const res = await fetch(`${API_URL}/api/startups?${queryParams.toString()}`, { headers });
       const data = await res.json();
       if (data.success) {
-        setStartups(data.data);
+        setStartups(data.data || []);
       } else {
         setError(data.error || 'Failed to fetch startups');
       }
@@ -308,9 +358,78 @@ export default function StartupsPage() {
     }
   };
 
+  const handleAiFilterSubmit = async () => {
+    if (!aiQuery.trim()) return;
+    setAiLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`${API_URL}/api/startups/ai-filter`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ query: aiQuery })
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        const filters = data.data;
+        
+        // Update all filter states
+        if (filters.industry) {
+          const matchedInd = industries.find(ind => ind.toLowerCase() === filters.industry.toLowerCase()) || filters.industry;
+          setIndustryFilter(matchedInd);
+        } else {
+          setIndustryFilter('All');
+        }
+        
+        setStageFilter(filters.stage || 'All');
+        setLocationFilter(filters.location || '');
+        setVerifiedFilter(!!filters.verified);
+        setSortFilter(filters.sort || 'recently_created');
+        setSearchTerm(filters.search || '');
+        
+        setIsFilterActive(true);
+        addToast('AI filters applied successfully!', 'success');
+      } else {
+        addToast(data.error || 'AI filter failed. Falling back to keyword search.', 'warning');
+        setSearchTerm(aiQuery);
+      }
+    } catch (err) {
+      console.error(err);
+      addToast('AI filter service unavailable. Falling back to keyword search.', 'warning');
+      setSearchTerm(aiQuery);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const toggleAiMode = () => {
+    setIsAiMode(!isAiMode);
+    if (!isAiMode) {
+      setAiQuery(searchTerm);
+    } else {
+      setSearchTerm(aiQuery);
+    }
+  };
+
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setIndustryFilter('All');
+    setStageFilter('All');
+    setLocationFilter('');
+    setVerifiedFilter(false);
+    setSortFilter('recently_created');
+    setIsAiMode(false);
+    setAiQuery('');
+    setIsFilterActive(false);
+    addToast('Filters cleared', 'success');
+  };
+
+
   const fetchAppliedJobs = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/job-seeker/applications`, {
+      const res = await fetch(`${API_URL}/api/user/applications`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
@@ -438,22 +557,26 @@ export default function StartupsPage() {
     }
   };
 
-  const filteredStartups = startups.filter(startup => 
-    startup.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    startup.oneLinePitch?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    startup.industry?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const isSearchOrFilterActive = 
+    searchTerm.trim() !== '' ||
+    industryFilter !== 'All' ||
+    stageFilter !== 'All' ||
+    locationFilter.trim() !== '' ||
+    verifiedFilter ||
+    isFilterActive;
+
+  const filteredStartups = startups;
 
   // Sorting logics:
-  const trendingStartups = [...filteredStartups]
+  const trendingStartups = [...startups]
     .sort((a, b) => (b.views || 0) - (a.views || 0))
     .slice(0, 3);
 
-  const newLaunches = [...filteredStartups]
+  const newLaunches = [...startups]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 3);
 
-  const aiRecommended = [...filteredStartups]
+  const aiRecommended = [...startups]
     .sort((a, b) => (b.metrics?.investorInterest || 0) - (a.metrics?.investorInterest || 0))
     .slice(0, 3);
 
@@ -463,23 +586,170 @@ export default function StartupsPage() {
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pt-24">
         
-        {/* Header & Search */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4 bg-white p-6 rounded-3xl border border-slate-200/60 shadow-[0_8px_30px_rgba(15,23,42,0.02)]">
-          <div>
-            <h1 className="text-3xl font-black text-slate-900 leading-tight">Discover the next unicorn 🚀</h1>
-            <p className="text-sm text-slate-500 font-semibold mt-1">Find and connect with promising startups and apply to roles matching your skills.</p>
+        {/* Header & Search / Filters Card */}
+        <div className="flex flex-col mb-8 gap-6 bg-white p-6 rounded-3xl border border-slate-200/60 shadow-[0_8px_30px_rgba(15,23,42,0.02)]">
+          {/* Top row */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-black text-slate-900 leading-tight">Discover the next unicorn 🚀</h1>
+              <p className="text-sm text-slate-500 font-semibold mt-1">Find and connect with promising startups and apply to roles matching your skills.</p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row w-full md:w-[600px] gap-2 items-center">
+              <div className="relative flex-1 w-full font-semibold">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder={isAiMode ? "Ask AI: e.g. 'show verified AI startups'..." : "Search startups by name, founder, industry, or pitch..."}
+                  className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 text-xs font-semibold"
+                  value={isAiMode ? aiQuery : searchTerm}
+                  onChange={(e) => {
+                    if (isAiMode) {
+                      setAiQuery(e.target.value);
+                    } else {
+                      setSearchTerm(e.target.value);
+                      setIsFilterActive(true);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      if (isAiMode) handleAiFilterSubmit();
+                    }
+                  }}
+                  suppressHydrationWarning={true}
+                />
+              </div>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <button
+                  onClick={toggleAiMode}
+                  suppressHydrationWarning={true}
+                  className={`flex-1 sm:flex-initial px-4 py-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition whitespace-nowrap ${
+                    isAiMode 
+                      ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-md' 
+                      : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  <Sparkles className={`h-4 w-4 ${isAiMode ? 'animate-pulse' : ''}`} />
+                  {isAiMode ? 'AI Mode' : 'AI Filter'}
+                </button>
+                {isAiMode && (
+                  <button
+                    onClick={handleAiFilterSubmit}
+                    disabled={aiLoading}
+                    suppressHydrationWarning={true}
+                    className="flex-1 sm:flex-initial px-5 py-3 bg-indigo-650 hover:bg-indigo-700 text-white font-bold text-xs rounded-2xl shadow-sm transition whitespace-nowrap"
+                  >
+                    {aiLoading ? 'Thinking...' : 'Apply'}
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
-          
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-450" />
-            <input
-              type="text"
-              placeholder="Search startups by name, industry, or pitch..."
-              className="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200/60 bg-slate-50 text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary/20 text-xs font-semibold"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              suppressHydrationWarning={true}
-            />
+
+          {/* Filters Row */}
+          <div className="pt-4 border-t border-slate-100 flex flex-wrap gap-4 items-center">
+            {/* Industry Dropdown */}
+            <div className="flex flex-col min-w-[150px]">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1 font-sans">Industry</label>
+              <select
+                className="px-3 py-2 bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-100 transition outline-none"
+                value={industryFilter}
+                suppressHydrationWarning={true}
+                onChange={(e) => {
+                  setIndustryFilter(e.target.value);
+                  setIsFilterActive(true);
+                }}
+              >
+                <option value="All">All Industries</option>
+                {industries.map(ind => (
+                  <option key={ind} value={ind}>{ind}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Stage Dropdown */}
+            <div className="flex flex-col min-w-[120px]">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1 font-sans">Stage</label>
+              <select
+                className="px-3 py-2 bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-100 transition outline-none"
+                value={stageFilter}
+                suppressHydrationWarning={true}
+                onChange={(e) => {
+                  setStageFilter(e.target.value);
+                  setIsFilterActive(true);
+                }}
+              >
+                <option value="All">All Stages</option>
+                <option value="idea">Idea Stage</option>
+                <option value="mvp">MVP / Prototype</option>
+                <option value="first_customer">First Customer</option>
+                <option value="revenue">Generating Revenue</option>
+                <option value="funded">Funded</option>
+              </select>
+            </div>
+
+            {/* Location Input */}
+            <div className="flex flex-col min-w-[150px] flex-1 sm:flex-initial">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1 font-sans">Location</label>
+              <input
+                type="text"
+                placeholder="e.g. Remote, Mumbai..."
+                className="px-3 py-2 bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-100 transition outline-none"
+                value={locationFilter}
+                suppressHydrationWarning={true}
+                onChange={(e) => {
+                  setLocationFilter(e.target.value);
+                  setIsFilterActive(true);
+                }}
+              />
+            </div>
+
+            {/* Sort Dropdown */}
+            <div className="flex flex-col min-w-[150px]">
+              <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1 font-sans">Sort By</label>
+              <select
+                className="px-3 py-2 bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-100 transition outline-none"
+                value={sortFilter}
+                suppressHydrationWarning={true}
+                onChange={(e) => {
+                  setSortFilter(e.target.value);
+                  setIsFilterActive(true);
+                }}
+              >
+                <option value="recently_created">Recently Created</option>
+                <option value="most_viewed">Most Viewed</option>
+                <option value="most_followed">Most Followed</option>
+              </select>
+            </div>
+
+            {/* Verified Checkbox */}
+            <div className="flex items-center gap-2 mt-4 sm:mt-0">
+              <input
+                type="checkbox"
+                id="verifiedFilter"
+                suppressHydrationWarning={true}
+                className="w-4 h-4 text-primary bg-slate-50 border-slate-200 rounded focus:ring-primary/20"
+                checked={verifiedFilter}
+                onChange={(e) => {
+                  setVerifiedFilter(e.target.checked);
+                  setIsFilterActive(true);
+                }}
+              />
+              <label htmlFor="verifiedFilter" className="text-xs font-bold text-slate-700 cursor-pointer select-none">
+                Verified Only
+              </label>
+            </div>
+
+            {/* Clear Filters Button */}
+            {(industryFilter !== 'All' || stageFilter !== 'All' || locationFilter !== '' || sortFilter !== 'recently_created' || verifiedFilter || searchTerm !== '' || isAiMode || isFilterActive) && (
+              <button
+                onClick={clearAllFilters}
+                suppressHydrationWarning={true}
+                className="mt-4 sm:mt-0 ml-auto px-4 py-2 text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
         </div>
 
@@ -492,31 +762,56 @@ export default function StartupsPage() {
             <h3 className="text-sm font-extrabold text-red-500">{error}</h3>
             <p className="text-xs text-slate-500 font-semibold mt-1">Please try again later.</p>
           </div>
-        ) : startups.length === 0 ? (
+        ) : startups.length === 0 && !isSearchOrFilterActive ? (
           <div className="text-center py-20 bg-white rounded-3xl border border-slate-200/60">
-            <div className="bg-blue-50 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-105">
+            <div className="bg-blue-50 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
               <Rocket className="h-8 w-8 text-primary" />
             </div>
             <h3 className="text-sm font-extrabold text-slate-900">
               No public startups yet. Be the first founder to launch.
             </h3>
           </div>
-        ) : filteredStartups.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-3xl border border-slate-200/60">
-            <div className="bg-blue-50 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-105">
-              <Search className="h-8 w-8 text-primary" />
+        ) : isSearchOrFilterActive ? (
+          filteredStartups.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-3xl border border-slate-200/60">
+              <div className="bg-blue-50 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-100">
+                <Search className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-sm font-extrabold text-slate-900">
+                No startups found
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">Try adjusting your search terms or filters</p>
+              <button 
+                onClick={clearAllFilters}
+                className="mt-4 px-5 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-100 transition"
+              >
+                Clear Search & Filters
+              </button>
             </div>
-            <h3 className="text-sm font-extrabold text-slate-900">
-              No startups found matching your search
-            </h3>
-            <p className="text-xs text-slate-500 mt-1">Try adjusting your search terms</p>
-            <button 
-              onClick={() => setSearchTerm('')}
-              className="mt-4 px-5 py-2.5 bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-100 transition"
-            >
-              Clear Search
-            </button>
-          </div>
+          ) : (
+            <section className="mb-12">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <Search className="h-6 w-6 text-indigo-600" />
+                  <h2 className="text-xl font-black text-slate-950 uppercase tracking-wide">Search Results ({filteredStartups.length})</h2>
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredStartups.map(startup => (
+                  <StartupCard 
+                    key={startup._id} 
+                    startup={startup} 
+                    onFollow={handleFollow}
+                    onSave={handleSave}
+                    onViewJobs={handleOpenJobs}
+                    onShowInterest={handleShowInterest}
+                    onMessageFounder={handleMessageFounder}
+                    currentUser={user}
+                  />
+                ))}
+              </div>
+            </section>
+          )
         ) : (
           <>
             <StartupSection 
@@ -554,6 +849,28 @@ export default function StartupsPage() {
               onMessageFounder={handleMessageFounder}
               currentUser={user}
             />
+
+            {/* All Startups section when no search/filters are active */}
+            <section className="mb-12">
+              <div className="flex items-center gap-2 mb-6">
+                <Rocket className="h-6 w-6 text-indigo-600" />
+                <h2 className="text-xl font-black text-slate-950 uppercase tracking-wide">All Startups ({startups.length})</h2>
+              </div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {startups.map(startup => (
+                  <StartupCard 
+                    key={startup._id} 
+                    startup={startup} 
+                    onFollow={handleFollow}
+                    onSave={handleSave}
+                    onViewJobs={handleOpenJobs}
+                    onShowInterest={handleShowInterest}
+                    onMessageFounder={handleMessageFounder}
+                    currentUser={user}
+                  />
+                ))}
+              </div>
+            </section>
           </>
         )}
       </main>

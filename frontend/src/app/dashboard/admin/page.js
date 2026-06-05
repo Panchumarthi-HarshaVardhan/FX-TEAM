@@ -840,7 +840,7 @@ export default function AdminDashboard() {
                       <option value="">All Roles</option>
                       <option value="founder">Founder</option>
                       <option value="investor">Investor</option>
-                      <option value="job_seeker">Job Seeker</option>
+                      <option value="user">User</option>
                       <option value="admin">Admin</option>
                     </select>
                     <select value={userVerifiedFilter} onChange={(e) => setUserVerifiedFilter(e.target.value)} className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 outline-none">

@@ -431,8 +431,8 @@ export default function FounderDashboard() {
     if (user.role !== 'founder') {
       if (user.role === 'investor') {
         router.push('/dashboard/investor');
-      } else if (user.role === 'job_seeker') {
-        router.push('/dashboard/job-seeker');
+      } else if (user.role === 'user' || user.role === 'job_seeker') {
+        router.push('/dashboard/user');
       } else {
         router.push('/profile/setup');
       }

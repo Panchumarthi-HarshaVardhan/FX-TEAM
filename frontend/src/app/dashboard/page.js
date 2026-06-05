@@ -27,8 +27,8 @@ export default function Dashboard() {
       router.replace('/dashboard/admin');
     } else if (user.role === 'investor') {
       router.replace('/dashboard/investor');
-    } else if (user.role === 'job_seeker') {
-      router.replace('/dashboard/job-seeker');
+    } else if (user.role === 'user' || user.role === 'job_seeker') {
+      router.replace('/dashboard/user');
     } else {
       router.replace('/dashboard/founder');
     }

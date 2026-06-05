@@ -301,6 +301,7 @@ startupSchema.methods.toPublicJSON = function(currentUser = null) {
     featured: this.featured,
     metrics: this.metrics,
     tags: this.tags,
+    location: this.location,
     createdAt: this.createdAt
   };
 

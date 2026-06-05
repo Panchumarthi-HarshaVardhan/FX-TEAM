@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:3000/api';
 
 async function runTests() {
   try {
@@ -30,7 +30,7 @@ async function runTests() {
       name: `Job Seeker R_${uniqueId}`,
       email: `seeker_r_${uniqueId}@test.com`,
       password: 'password123',
-      role: 'job_seeker',
+      role: 'user',
       username: `seeker_r_${uniqueId}`
     };
 
@@ -154,14 +154,14 @@ async function runTests() {
     console.log('   Verified Job Seeker in Startup teamMembers array.');
 
     // Check Job Seeker dashboard teams endpoint
-    res = await request(`${API_URL}/job-seeker/teams`, 'GET', null, jobSeekerToken);
+    res = await request(`${API_URL}/user/teams`, 'GET', null, jobSeekerToken);
     if (res.status !== 200) throw new Error('Failed to fetch job seeker teams: ' + JSON.stringify(res.data));
     const isStartupInSeekerTeams = res.data.data.some(membership => membership.startupId?._id === startupId);
     if (!isStartupInSeekerTeams) throw new Error('Startup did not appear in Job Seeker My Teams dashboard list');
     console.log('   Verified Startup in Job Seeker My Teams list.');
 
     // Check Job Seeker role requests list
-    res = await request(`${API_URL}/job-seeker/role-requests`, 'GET', null, jobSeekerToken);
+    res = await request(`${API_URL}/user/role-requests`, 'GET', null, jobSeekerToken);
     if (res.status !== 200) throw new Error('Failed to fetch seeker role requests: ' + JSON.stringify(res.data));
     const foundRequestInSeekerList = res.data.data.find(req => req._id === requestId);
     if (!foundRequestInSeekerList) throw new Error('Request not found in job seeker role-requests list');

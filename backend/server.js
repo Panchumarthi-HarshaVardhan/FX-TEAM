@@ -28,6 +28,7 @@ const assistantRoutes = require('./routes/assistant');
 const teamInvitationRoutes = require('./routes/teamInvitations');
 const adminRoutes = require('./routes/admin');
 const mailRoutes = require('./routes/mail');
+const settingsRoutes = require('./routes/settings');
 
 
 // Import Models for Socket Logic
@@ -253,7 +254,9 @@ app.use('/api/assistant', assistantRoutes);
 app.use('/api/team-invitations', teamInvitationRoutes);
 app.use('/api/jobs', require('./routes/jobs'));
 app.use('/api/job-seeker', require('./routes/jobSeeker'));
+app.use('/api/user', require('./routes/jobSeeker'));
 app.use('/api/founder', require('./routes/founder'));
+app.use('/api/settings', settingsRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

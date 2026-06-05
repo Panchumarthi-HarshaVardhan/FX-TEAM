@@ -94,15 +94,15 @@ export default function SignupPage() {
         <div className="grid grid-cols-3 gap-2.5 mb-8">
           <button
             type="button"
-            onClick={() => handleRoleSelect('job_seeker')}
+            onClick={() => handleRoleSelect('user')}
             className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition ${
-              formData.role === 'job_seeker'
+              formData.role === 'user'
                 ? 'border-indigo-500 bg-indigo-50 text-indigo-650'
                 : 'border-gray-100 hover:border-indigo-100 text-body'
             }`}
           >
             <User className="h-6 w-6 mb-2" />
-            <span className="text-[11px] font-bold">Job Seeker</span>
+            <span className="text-[11px] font-bold">User</span>
           </button>
 
           <button
@@ -221,7 +221,7 @@ export default function SignupPage() {
 
           <button
             type="submit"
-            className="w-full bg-heading text-white font-bold py-3 rounded-xl hover:bg-black transition transform hover:-translate-y-0.5 shadow-md"
+            className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-blue-600 transition transform hover:-translate-y-0.5 shadow-md"
           >
             Create Account
           </button>

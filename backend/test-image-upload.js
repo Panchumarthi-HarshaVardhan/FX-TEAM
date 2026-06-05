@@ -7,7 +7,7 @@ const testImageUpload = async () => {
     const email = `upload_test_${Date.now()}@example.com`;
     
     // 1. Register User
-    const registerRes = await axios.post('http://localhost:5000/api/auth/register', {
+    const registerRes = await axios.post('http://localhost:3000/api/auth/register', {
       name: 'Upload Test User',
       email: email,
       password: 'password123',
@@ -28,7 +28,7 @@ const testImageUpload = async () => {
     const avatarForm = new FormData();
     avatarForm.append('image', mockImageBuffer, { filename: 'avatar.png', contentType: 'image/png' });
     
-    const avatarRes = await axios.post('http://localhost:5000/api/users/upload-avatar', avatarForm, {
+    const avatarRes = await axios.post('http://localhost:3000/api/users/upload-avatar', avatarForm, {
       headers: {
         Authorization: `Bearer ${token}`,
         ...avatarForm.getHeaders()
@@ -47,7 +47,7 @@ const testImageUpload = async () => {
     const coverForm = new FormData();
     coverForm.append('image', mockImageBuffer, { filename: 'cover.png', contentType: 'image/png' });
     
-    const coverRes = await axios.post('http://localhost:5000/api/users/upload-cover', coverForm, {
+    const coverRes = await axios.post('http://localhost:3000/api/users/upload-cover', coverForm, {
       headers: {
         Authorization: `Bearer ${token}`,
         ...coverForm.getHeaders()

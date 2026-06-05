@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
 import Link from 'next/link';
 import { 
@@ -722,6 +722,14 @@ export default function ShopPage() {
   const [launchModalOpen, setLaunchModalOpen] = useState(false);
   const [aiRecommendations, setAiRecommendations] = useState([]);
 
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsMounted(true);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
   const filteredProducts = demoProducts.filter(p => {
     const matchesCategory = selectedCategory === 'All Products' || p.category === selectedCategory;
     const matchesSearch = searchQuery === '' || 
@@ -742,6 +750,14 @@ export default function ShopPage() {
     setSelectedProduct(product);
     setDetailModalOpen(true);
   };
+
+  if (!isMounted) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">

@@ -53,6 +53,8 @@ router.post('/unblock/:id', protect, unblockUser);
 // Profile Setup Routes
 router.post('/profile/job-seeker', protect, setupJobSeekerProfile);
 router.post('/job-seeker', protect, setupJobSeekerProfile);
+router.post('/profile/user', protect, setupJobSeekerProfile);
+router.post('/user', protect, setupJobSeekerProfile);
 router.post('/profile/founder', protect, setupFounderProfile);
 router.post('/founder', protect, setupFounderProfile);
 router.post('/profile/investor', protect, setupInvestorProfile);

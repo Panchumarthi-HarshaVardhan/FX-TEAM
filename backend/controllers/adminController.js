@@ -24,7 +24,7 @@ exports.getAdminStats = async (req, res) => {
     const totalUsers = await User.countDocuments();
     const founders = await User.countDocuments({ role: 'founder' });
     const investors = await User.countDocuments({ role: 'investor' });
-    const jobSeekers = await User.countDocuments({ role: 'job_seeker' });
+    const jobSeekers = await User.countDocuments({ role: { $in: ['user', 'job_seeker'] } });
     const startups = await Startup.countDocuments();
     const posts = await Post.countDocuments({ contentType: { $ne: 'video' } });
     const reels = await Post.countDocuments({ contentType: 'video' });
@@ -327,7 +327,7 @@ exports.getApplications = async (req, res) => {
       founderName: app.founderId?.name || 'N/A',
       applicantName: app.applicantId?.name || 'Anonymous',
       applicantEmail: app.applicantId?.email || 'N/A',
-      applicantRole: app.applicantId?.role || 'job_seeker',
+      applicantRole: app.applicantId?.role || 'user',
       status: app.status,
       resume: app.resume,
       createdAt: app.createdAt
@@ -341,7 +341,7 @@ exports.getApplications = async (req, res) => {
       founderName: app.founderId?.name || 'N/A',
       applicantName: app.applicantId?.name || 'Anonymous',
       applicantEmail: app.applicantId?.email || 'N/A',
-      applicantRole: app.applicantId?.role || 'job_seeker',
+      applicantRole: app.applicantId?.role || 'user',
       status: app.status,
       resume: app.resume,
       createdAt: app.createdAt
@@ -452,7 +452,7 @@ exports.getAnalytics = async (req, res) => {
     const totalUsers = await User.countDocuments();
     const founders = await User.countDocuments({ role: 'founder' });
     const investors = await User.countDocuments({ role: 'investor' });
-    const jobSeekers = await User.countDocuments({ role: 'job_seeker' });
+    const jobSeekers = await User.countDocuments({ role: { $in: ['user', 'job_seeker'] } });
     const admins = await User.countDocuments({ role: 'admin' });
 
     const totalStartups = await Startup.countDocuments();

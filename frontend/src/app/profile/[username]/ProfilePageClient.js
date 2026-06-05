@@ -375,7 +375,7 @@ export default function ProfilePageClient({ username }) {
                     onToggle={handleFollowToggle}
                     className="px-6 py-2.5 rounded-xl text-xs font-bold font-sans shadow-md"
                   />
-                  {currentUser && currentUser.role === 'founder' && profileUser.role === 'job_seeker' && (
+                  {currentUser && currentUser.role === 'founder' && (profileUser.role === 'user' || profileUser.role === 'job_seeker') && (
                     <button
                       onClick={() => setInviteModalOpen(true)}
                       className="px-4.5 py-2.5 bg-gradient-to-r from-indigo-500 to-blue-600 hover:opacity-90 text-white font-bold rounded-xl hover:shadow-md transition text-xs font-sans"

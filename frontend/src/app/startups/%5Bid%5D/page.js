@@ -90,7 +90,7 @@ function StartupHeader({ startup, isFollowing, isSaved, onFollow, onSave, onInte
                 Verified
               </span>
             )}
-            {startup.raisingFunds && user?.role !== 'job_seeker' && (
+            {startup.raisingFunds && user?.role !== 'user' && user?.role !== 'job_seeker' && (
               <span className="flex items-center gap-1 px-2.5 py-1 bg-green-50 text-green-700 text-xs font-bold rounded-full">
                 <DollarSign className="h-3 w-3" />
                 Raising Funds
@@ -653,9 +653,9 @@ export default function StartupDetailPage() {
   };
 
   const fetchAppliedJobs = async () => {
-    if (!token || user?.role !== 'job_seeker') return;
+    if (!token || (user?.role !== 'user' && user?.role !== 'job_seeker')) return;
     try {
-      const res = await fetch('http://localhost:3000/api/job-seeker/applications', {
+      const res = await fetch('http://localhost:3000/api/user/applications', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
@@ -676,7 +676,7 @@ export default function StartupDetailPage() {
   }, [id, token, user]);
 
   useEffect(() => {
-    if (token && user?.role === 'job_seeker') {
+    if (token && (user?.role === 'user' || user?.role === 'job_seeker')) {
       fetchAppliedJobs();
     }
   }, [token, user]);
@@ -814,7 +814,7 @@ export default function StartupDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-6">
             {/* Open Roles section displayed in main column for Job Seekers */}
-            {user?.role === 'job_seeker' && (
+            {(user?.role === 'user' || user?.role === 'job_seeker') && (
               <OpenRolesSection 
                 jobs={jobs} 
                 appliedJobIds={appliedJobIds} 
@@ -837,7 +837,7 @@ export default function StartupDetailPage() {
           
           <div className="space-y-6">
             {/* Hide InvestorPanel for Job Seeker role */}
-            {user?.role !== 'job_seeker' && <InvestorPanel funding={startup.funding} />}
+            {user?.role !== 'user' && user?.role !== 'job_seeker' && <InvestorPanel funding={startup.funding} />}
             <AIStartupInsights insights={startup.aiInsights} />
           </div>
         </div>
