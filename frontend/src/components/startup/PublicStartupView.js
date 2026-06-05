@@ -36,7 +36,7 @@ export default function PublicStartupView({ startup }) {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:5000/api/startups/save/${startup._id}`, {
+      const res = await fetch(`http://localhost:3000/api/startups/save/${startup._id}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });

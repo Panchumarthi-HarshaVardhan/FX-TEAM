@@ -22,7 +22,7 @@ const saveFilesLocally = async (req, videoFile, thumbnailFile) => {
   if (!fs.existsSync(thumbnailDir)) fs.mkdirSync(thumbnailDir, { recursive: true });
 
   const timestamp = Date.now();
-  const host = req.get('host') || 'localhost:5000';
+  const host = req.get('host') || 'localhost:3000';
   
   // Use http or https dynamically
   const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';

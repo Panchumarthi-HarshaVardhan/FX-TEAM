@@ -88,7 +88,7 @@ export default function ProfileSetupPage() {
       let payload = {};
 
       if (role === 'job_seeker') {
-        endpoint = 'http://localhost:5000/api/profile/job-seeker';
+        endpoint = 'http://localhost:3000/api/profile/job-seeker';
         payload = {
           profilePhoto: formData.profilePhoto,
           bio: formData.bio,
@@ -104,7 +104,7 @@ export default function ProfileSetupPage() {
           expectedSalary: formData.expectedSalary
         };
       } else if (role === 'founder') {
-        endpoint = 'http://localhost:5000/api/profile/founder';
+        endpoint = 'http://localhost:3000/api/profile/founder';
         payload = {
           profilePhoto: formData.profilePhoto,
           bio: formData.bio,
@@ -124,7 +124,7 @@ export default function ProfileSetupPage() {
           teamSize: formData.teamSize
         };
       } else if (role === 'investor') {
-        endpoint = 'http://localhost:5000/api/profile/investor';
+        endpoint = 'http://localhost:3000/api/profile/investor';
         payload = {
           profilePhoto: formData.profilePhoto,
           bio: formData.bio,

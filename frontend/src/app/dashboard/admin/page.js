@@ -147,7 +147,7 @@ export default function AdminDashboard() {
   const fetchKPIStats = async () => {
     try {
       setLoadingStats(true);
-      const res = await fetch('http://localhost:5000/api/admin/stats', {
+      const res = await fetch('http://localhost:3000/api/admin/stats', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
@@ -174,7 +174,7 @@ export default function AdminDashboard() {
         page: usersPage,
         limit: 10
       });
-      const res = await fetch(`http://localhost:5000/api/admin/users?${queryParams}`, {
+      const res = await fetch(`http://localhost:3000/api/admin/users?${queryParams}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
@@ -201,7 +201,7 @@ export default function AdminDashboard() {
         page: startupsPage,
         limit: 10
       });
-      const res = await fetch(`http://localhost:5000/api/admin/startups?${queryParams}`, {
+      const res = await fetch(`http://localhost:3000/api/admin/startups?${queryParams}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
@@ -221,7 +221,7 @@ export default function AdminDashboard() {
   const fetchInvestors = async () => {
     try {
       setLoadingInvestors(true);
-      const res = await fetch('http://localhost:5000/api/admin/investors', {
+      const res = await fetch('http://localhost:3000/api/admin/investors', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
@@ -240,7 +240,7 @@ export default function AdminDashboard() {
   const fetchApplications = async () => {
     try {
       setLoadingApps(true);
-      const res = await fetch('http://localhost:5000/api/admin/applications', {
+      const res = await fetch('http://localhost:3000/api/admin/applications', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
@@ -259,7 +259,7 @@ export default function AdminDashboard() {
   const fetchPosts = async () => {
     try {
       setLoadingPosts(true);
-      const res = await fetch('http://localhost:5000/api/admin/posts', {
+      const res = await fetch('http://localhost:3000/api/admin/posts', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
@@ -278,7 +278,7 @@ export default function AdminDashboard() {
   const fetchReports = async () => {
     try {
       setLoadingReports(true);
-      const res = await fetch('http://localhost:5000/api/admin/reports', {
+      const res = await fetch('http://localhost:3000/api/admin/reports', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
@@ -297,7 +297,7 @@ export default function AdminDashboard() {
   const fetchAnalytics = async () => {
     try {
       setLoadingAnalytics(true);
-      const res = await fetch('http://localhost:5000/api/admin/analytics', {
+      const res = await fetch('http://localhost:3000/api/admin/analytics', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
@@ -316,7 +316,7 @@ export default function AdminDashboard() {
   const fetchSystemSettings = async () => {
     try {
       setLoadingSettings(true);
-      const res = await fetch('http://localhost:5000/api/admin/settings', {
+      const res = await fetch('http://localhost:3000/api/admin/settings', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
@@ -375,7 +375,7 @@ export default function AdminDashboard() {
   const handleToggleBlock = async (userId) => {
     try {
       setActioningId(userId);
-      const res = await fetch(`http://localhost:5000/api/admin/users/${userId}/block`, {
+      const res = await fetch(`http://localhost:3000/api/admin/users/${userId}/block`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -396,7 +396,7 @@ export default function AdminDashboard() {
   const handleVerifyUser = async (userId, isVerified) => {
     try {
       setActioningId(userId);
-      const res = await fetch(`http://localhost:5000/api/admin/users/${userId}/verify`, {
+      const res = await fetch(`http://localhost:3000/api/admin/users/${userId}/verify`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -420,7 +420,7 @@ export default function AdminDashboard() {
   const handleDeleteUser = async (userId) => {
     try {
       setActioningId(userId);
-      const res = await fetch(`http://localhost:5000/api/admin/users/${userId}`, {
+      const res = await fetch(`http://localhost:3000/api/admin/users/${userId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -442,7 +442,7 @@ export default function AdminDashboard() {
   const handleVerifyStartup = async (startupId, isVerified) => {
     try {
       setActioningId(startupId);
-      const res = await fetch(`http://localhost:5000/api/admin/startups/${startupId}/verify`, {
+      const res = await fetch(`http://localhost:3000/api/admin/startups/${startupId}/verify`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -467,7 +467,7 @@ export default function AdminDashboard() {
     e.preventDefault();
     if (!editingStartup) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/startups/${editingStartup._id}`, {
+      const res = await fetch(`http://localhost:3000/api/admin/startups/${editingStartup._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -490,7 +490,7 @@ export default function AdminDashboard() {
   const handleDeleteStartup = async (startupId) => {
     try {
       setActioningId(startupId);
-      const res = await fetch(`http://localhost:5000/api/admin/startups/${startupId}`, {
+      const res = await fetch(`http://localhost:3000/api/admin/startups/${startupId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -512,7 +512,7 @@ export default function AdminDashboard() {
   const handleVerifyInvestor = async (investorId, isVerified) => {
     try {
       setActioningId(investorId);
-      const res = await fetch(`http://localhost:5000/api/admin/investors/${investorId}/verify`, {
+      const res = await fetch(`http://localhost:3000/api/admin/investors/${investorId}/verify`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -537,7 +537,7 @@ export default function AdminDashboard() {
   const handleUpdateAppStatus = async (appId, newStatus, appType) => {
     try {
       setActioningId(appId);
-      const res = await fetch(`http://localhost:5000/api/admin/applications/${appId}/status`, {
+      const res = await fetch(`http://localhost:3000/api/admin/applications/${appId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -562,7 +562,7 @@ export default function AdminDashboard() {
   const handleDeletePost = async (postId) => {
     try {
       setActioningId(postId);
-      const res = await fetch(`http://localhost:5000/api/admin/posts/${postId}`, {
+      const res = await fetch(`http://localhost:3000/api/admin/posts/${postId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -584,7 +584,7 @@ export default function AdminDashboard() {
   const handleResolveReport = async (reportId, status) => {
     try {
       setActioningId(reportId);
-      const res = await fetch(`http://localhost:5000/api/admin/reports/${reportId}/status`, {
+      const res = await fetch(`http://localhost:3000/api/admin/reports/${reportId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -622,7 +622,7 @@ export default function AdminDashboard() {
 
     try {
       setPasswordSaving(true);
-      const res = await fetch('http://localhost:5000/api/users/change-password', {
+      const res = await fetch('http://localhost:3000/api/users/change-password', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -654,7 +654,7 @@ export default function AdminDashboard() {
     e.preventDefault();
     try {
       setActioningId('settings');
-      const res = await fetch('http://localhost:5000/api/admin/settings', {
+      const res = await fetch('http://localhost:3000/api/admin/settings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

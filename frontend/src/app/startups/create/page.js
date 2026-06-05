@@ -49,7 +49,7 @@ export default function CreateStartupPage() {
         payload.contactEmail = user.email;
       }
 
-      const res = await fetch('http://localhost:5000/api/startups', {
+      const res = await fetch('http://localhost:3000/api/startups', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

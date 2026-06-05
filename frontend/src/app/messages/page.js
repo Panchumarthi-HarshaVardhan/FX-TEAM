@@ -80,7 +80,7 @@ function MessagesPageContent() {
           
           // Better approach: Create a temporary conversation object for the UI
           // fetch user details first
-          const res = await fetch(`http://localhost:5000/api/users/${recipientId}`, {
+          const res = await fetch(`http://localhost:3000/api/users/${recipientId}`, {
              headers: { Authorization: `Bearer ${token}` }
           });
           const data = await res.json();
@@ -251,7 +251,7 @@ function MessagesPageContent() {
         // which usually marks all as read up to now.
         // For now, using the general 'read' endpoint which marks all unread as seen.
         
-        await fetch(`http://localhost:5000/api/messages/${convId}/read`, {
+        await fetch(`http://localhost:3000/api/messages/${convId}/read`, {
             method: 'PUT',
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -270,7 +270,7 @@ function MessagesPageContent() {
   const handleEditMessage = async (messageId, newContent) => {
       try {
           if (!token) return;
-          const res = await fetch(`http://localhost:5000/api/message/${messageId}`, {
+          const res = await fetch(`http://localhost:3000/api/message/${messageId}`, {
               method: 'PUT',
               headers: {
                   'Content-Type': 'application/json',
@@ -299,7 +299,7 @@ function MessagesPageContent() {
        
        try {
            if (!token) return;
-           const res = await fetch(`http://localhost:5000/api/message/${messageId}?deleteForEveryone=true`, {
+           const res = await fetch(`http://localhost:3000/api/message/${messageId}?deleteForEveryone=true`, {
                method: 'DELETE',
                headers: { Authorization: `Bearer ${token}` }
            });
@@ -322,7 +322,7 @@ function MessagesPageContent() {
 
     try {
         if (!token) return;
-        const res = await fetch(`http://localhost:5000/api/users/block/${userId}`, {
+        const res = await fetch(`http://localhost:3000/api/users/block/${userId}`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -358,7 +358,7 @@ function MessagesPageContent() {
   const fetchConversations = async () => {
     try {
       if (!token) return;
-      const res = await fetch('http://localhost:5000/api/messages/conversations', {
+      const res = await fetch('http://localhost:3000/api/messages/conversations', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -380,7 +380,7 @@ function MessagesPageContent() {
     setLoadingMessages(true);
     try {
       if (!token) return;
-      const res = await fetch(`http://localhost:5000/api/messages/${convId}`, {
+      const res = await fetch(`http://localhost:3000/api/messages/${convId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -414,7 +414,7 @@ function MessagesPageContent() {
         payload.replyTo = replyToId;
       }
 
-      const res = await fetch('http://localhost:5000/api/messages', {
+      const res = await fetch('http://localhost:3000/api/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -466,7 +466,7 @@ function MessagesPageContent() {
     try {
         if (!token) return;
         // Correct endpoint: /api/messages/:id/accept
-        const res = await fetch(`http://localhost:5000/api/messages/${convId}/accept`, {
+        const res = await fetch(`http://localhost:3000/api/messages/${convId}/accept`, {
             method: 'PUT',
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -491,7 +491,7 @@ function MessagesPageContent() {
     try {
         if (!token) return;
         // Correct endpoint: /api/messages/:id/decline
-        const res = await fetch(`http://localhost:5000/api/messages/${convId}/decline`, {
+        const res = await fetch(`http://localhost:3000/api/messages/${convId}/decline`, {
             method: 'PUT',
             headers: { Authorization: `Bearer ${token}` }
         });

@@ -11,7 +11,7 @@ export default function TrendingSidebar() {
   useEffect(() => {
     const fetchTrends = async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/posts/trending');
+        const res = await fetch('http://localhost:3000/api/posts/trending');
         
         const contentType = res.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {

@@ -380,7 +380,7 @@ export default function UserDashboard() {
     const fetchDashboardData = async () => {
       try {
         if (!token) return;
-        const res = await fetch('http://localhost:5000/api/dashboard/user', {
+        const res = await fetch('http://localhost:3000/api/dashboard/user', {
           headers: {
             Authorization: `Bearer ${token}`
           }

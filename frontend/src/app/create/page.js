@@ -44,7 +44,7 @@ export default function CreatePostPage() {
     try {
       setFetchingStartups(true);
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:5000/api/startups?founderId=${user._id}`, {
+      const res = await fetch(`http://localhost:3000/api/startups?founderId=${user._id}`, {
         headers: { Authorization: `Bearer ${token}` },
         credentials: 'include'
       });
@@ -106,7 +106,7 @@ export default function CreatePostPage() {
         formData.append('mediaUrl', mediaUrl);
       }
 
-      const res = await fetch('http://localhost:5000/api/posts', {
+      const res = await fetch('http://localhost:3000/api/posts', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`

@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '../../../components/Navbar';
 import ConfirmationModal from '../../../components/ConfirmationModal';
-import QuestionForm from '../../../components/qa/QuestionForm';
-import QAList from '../../../components/qa/QAList';
 import FollowButton from '../../../components/FollowButton';
 import ShareButton from '../../../components/ShareButton';
 import SendInterestRequestModal from '../../../components/SendInterestRequestModal';
@@ -828,24 +826,6 @@ export default function ProfilePageClient({ username }) {
               </div>
             )}
 
-            {/* INTERACTIVE Q&A SECTION */}
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
-                <MessageCircle className="h-5.5 w-5.5 text-blue-600" />
-                <h3 className="text-md font-black uppercase tracking-tight text-slate-950">
-                  Interactive Q&A
-                </h3>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="md:col-span-1">
-                  <QuestionForm targetId={profileUser._id} targetType="User" />
-                </div>
-                <div className="md:col-span-2">
-                  <QAList targetId={profileUser._id} targetType="User" />
-                </div>
-              </div>
-            </div>
 
           </div>
 

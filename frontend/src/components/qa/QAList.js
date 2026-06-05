@@ -14,7 +14,7 @@ export default function QAList({ targetId, targetType }) {
 
   const fetchQuestions = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/questions/${targetType}/${targetId}`);
+      const res = await fetch(`http://localhost:3000/api/questions/${targetType}/${targetId}`);
       const data = await res.json();
       
       if (data.success) {

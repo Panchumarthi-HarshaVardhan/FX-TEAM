@@ -76,6 +76,15 @@ export default function EditProfilePage() {
         coverImage: user.coverImage || null,
         experience: user.experience || []
       });
+
+      // Read tab parameter client-side if present
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const tabParam = params.get('tab');
+        if (tabParam && ['basics', 'portfolio', 'professional', 'experience', 'role'].includes(tabParam)) {
+          setActiveTab(tabParam);
+        }
+      }
     }
   }, [user, loading, router]);
 
@@ -125,7 +134,7 @@ export default function EditProfilePage() {
         }
       };
 
-      const res = await fetch('http://localhost:5000/api/users/update', {
+      const res = await fetch('http://localhost:3000/api/users/update', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -148,7 +157,7 @@ export default function EditProfilePage() {
         await refreshUser();
 
         // Re-fetch profile from backend GET /api/users/me
-        const meRes = await fetch('http://localhost:5000/api/users/me', {
+        const meRes = await fetch('http://localhost:3000/api/users/me', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -195,7 +204,7 @@ export default function EditProfilePage() {
     
     try {
       const endpoint = type === 'avatar' ? 'upload-avatar' : 'upload-cover';
-      const res = await fetch(`http://localhost:5000/api/users/${endpoint}`, {
+      const res = await fetch(`http://localhost:3000/api/users/${endpoint}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
