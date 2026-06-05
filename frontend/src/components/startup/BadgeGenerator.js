@@ -7,7 +7,7 @@ export default function BadgeGenerator({ startupId, slug }) {
   const [copied, setCopied] = useState(false);
   
   // Assuming API URL from env or constant
-  const apiUrl = 'http://localhost:5000'; 
+  const apiUrl = 'http://localhost:3000'; 
   const badgeUrl = `${apiUrl}/api/startups/${startupId}/badge`;
   const linkUrl = `http://localhost:3000/s/${slug}`; // Frontend URL
 

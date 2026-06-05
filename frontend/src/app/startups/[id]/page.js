@@ -470,7 +470,7 @@ export default function StartupDetailPage() {
   const fetchStartup = async () => {
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await fetch(`http://localhost:5000/api/startups/${id}`, { headers });
+      const res = await fetch(`http://localhost:3000/api/startups/${id}`, { headers });
       const json = await res.json();
       if (json.success && json.data) {
         const merged = {
@@ -524,7 +524,7 @@ export default function StartupDetailPage() {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:5000/api/startups/save/${id}`, {
+      const res = await fetch(`http://localhost:3000/api/startups/save/${id}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -624,7 +624,7 @@ function InvestorInterestModal({ isOpen, onClose, startupId, onInterestSent }) {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/investor/interest-request', {
+      const res = await fetch('http://localhost:3000/api/investor/interest-request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -727,7 +727,7 @@ function RoleRequestModal({ isOpen, onClose, startupId, onRoleRequestSent }) {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/startups/${startupId}/role-request`, {
+      const res = await fetch(`http://localhost:3000/api/startups/${startupId}/role-request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

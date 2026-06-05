@@ -115,15 +115,6 @@ const demoScoreData = {
   ]
 };
 
-const founderJourney = [
-  { id: 1, title: 'Complete profile', completed: true },
-  { id: 2, title: 'Add startup', completed: true },
-  { id: 3, title: 'Upload pitch deck', completed: false },
-  { id: 4, title: 'Connect with investors', completed: true },
-  { id: 5, title: 'Launch first product', completed: true },
-  { id: 6, title: 'Get verified', completed: true },
-  { id: 7, title: 'Reach 1000 views', completed: false }
-];
 
 const aiInsights = [
   'Profiles with startup descriptions get 3x more investor engagement.',
@@ -214,6 +205,88 @@ export default function FounderDashboard() {
     notes: ''
   });
   const [hiring, setHiring] = useState(false);
+
+  const journeyItems = [
+    { 
+      id: 1, 
+      title: 'Complete profile', 
+      completed: !!(user?.profileCompleted || user?.isProfileComplete), 
+      description: 'Fill in bio, photo, and about details' 
+    },
+    { 
+      id: 2, 
+      title: 'Add startup', 
+      completed: !!(data?.startups && data.startups.length > 0), 
+      description: 'List your startup venture on FounderX' 
+    },
+    { 
+      id: 3, 
+      title: 'Upload pitch deck', 
+      completed: !!(user?.roleProfile?.pitchDeckUrl || user?.pitchDeckUrl), 
+      description: 'Add DocSend or PDF link to role info' 
+    },
+    { 
+      id: 4, 
+      title: 'Connect with investors', 
+      completed: !!(investorInterests && investorInterests.length > 0), 
+      description: 'Receive interest requests from VCs or angels' 
+    },
+    { 
+      id: 5, 
+      title: 'Launch first product', 
+      completed: !!(data?.products && data.products.length > 0), 
+      description: 'Publish product template/course to shop' 
+    },
+    { 
+      id: 6, 
+      title: 'Get verified', 
+      completed: !!user?.isVerified, 
+      description: 'Get blue verification badge for credibility' 
+    },
+    { 
+      id: 7, 
+      title: 'Reach 1000 views', 
+      completed: !!(data?.analytics?.pitchViews >= 1000 || data?.analytics?.startupViews >= 1000), 
+      description: 'Share your profile to grow visibility' 
+    }
+  ];
+
+  const handleJourneyItemClick = (item) => {
+    if (item.completed) return;
+    
+    switch (item.id) {
+      case 1:
+        router.push('/profile/edit');
+        break;
+      case 2:
+        router.push('/startups/create');
+        break;
+      case 3:
+        router.push('/profile/edit?tab=role');
+        break;
+      case 4:
+        router.push('/investors');
+        break;
+      case 5:
+        openNewProductModal();
+        break;
+      case 6:
+        setVerificationTarget({ type: 'User', id: user?._id });
+        setShowVerificationModal(true);
+        break;
+      case 7:
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          const profileUrl = `${window.location.origin}/profile/${user?.username || user?._id}`;
+          navigator.clipboard.writeText(profileUrl);
+          addToast('Your profile link has been copied to clipboard! Share it with your network.', 'success');
+        } else {
+          addToast('Share your profile URL to get more views!', 'info');
+        }
+        break;
+      default:
+        break;
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -776,7 +849,7 @@ export default function FounderDashboard() {
                 </Link>
               </div>
             </div>
-            <FounderJourney />
+            <FounderJourney items={journeyItems} onItemClick={handleJourneyItemClick} />
           </div>
         </div>
 
@@ -1790,12 +1863,12 @@ export default function FounderDashboard() {
 }
 
 // Founder Journey Component
-function FounderJourney() {
-  const completed = founderJourney.filter(item => item.completed).length;
-  const progress = Math.round((completed / founderJourney.length) * 100);
+function FounderJourney({ items = [], onItemClick }) {
+  const completed = items.filter(item => item.completed).length;
+  const progress = items.length > 0 ? Math.round((completed / items.length) * 100) : 0;
   
   return (
-    <div className="card p-6 mb-6 bg-white border border-gray-100 rounded-2xl shadow-sm">
+    <div className="card p-6 mb-6 bg-white border border-gray-150 rounded-2xl shadow-sm hover:shadow-md transition-all">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-black text-slate-950 flex items-center gap-2 uppercase tracking-wide">
           <Target className="h-5 w-5 text-primary" />
@@ -1806,22 +1879,53 @@ function FounderJourney() {
         </span>
       </div>
       
-      <div className="w-full bg-gray-150 rounded-full h-1.5 mb-4">
+      <div className="w-full bg-gray-100 rounded-full h-1.5 mb-5 overflow-hidden">
         <div 
-          className="bg-primary h-1.5 rounded-full transition-all duration-1000"
+          className="bg-gradient-to-r from-blue-650 to-primary h-1.5 rounded-full transition-all duration-1000 ease-out"
           style={{ width: `${progress}%` }}
         ></div>
       </div>
       
-      <div className="space-y-2">
-        {founderJourney.map(item => (
-          <div key={item.id} className="flex items-center gap-3 p-1.5 rounded-lg">
-            <div className={`h-5 w-5 rounded-full flex items-center justify-center flex-shrink-0 ${item.completed ? 'bg-green-500' : 'bg-gray-250'}`}>
-              {item.completed && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+      <div className="space-y-3">
+        {items.map(item => (
+          <div 
+            key={item.id} 
+            onClick={() => onItemClick && onItemClick(item)}
+            className={`flex items-center justify-between p-3 rounded-xl border transition-all duration-200 ${
+              item.completed 
+                ? 'bg-slate-50/50 border-slate-100' 
+                : 'bg-white border-slate-200 hover:border-primary/50 hover:bg-blue-50/5 cursor-pointer group'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <div className={`h-6 w-6 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
+                item.completed 
+                  ? 'bg-green-500 text-white' 
+                  : 'bg-slate-100 text-slate-400 group-hover:bg-primary/10 group-hover:text-primary'
+              }`}>
+                {item.completed ? (
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                ) : (
+                  <span className="text-[10px] font-black">{item.id}</span>
+                )}
+              </div>
+              <div className="space-y-0.5">
+                <span className={`text-xs font-black block ${
+                  item.completed ? 'text-slate-400 line-through' : 'text-slate-800'
+                }`}>
+                  {item.title}
+                </span>
+                {!item.completed && item.description && (
+                  <p className="text-[10px] text-slate-400 font-semibold group-hover:text-primary/70 transition-colors leading-none">
+                    {item.description}
+                  </p>
+                )}
+              </div>
             </div>
-            <span className={`text-xs font-semibold ${item.completed ? 'text-muted line-through' : 'text-slate-800'}`}>
-              {item.title}
-            </span>
+            
+            {!item.completed && (
+              <ArrowUpRight className="h-3.5 w-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+            )}
           </div>
         ))}
       </div>

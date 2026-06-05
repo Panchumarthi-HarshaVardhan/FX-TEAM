@@ -10,13 +10,13 @@ export const getApiUrl = () => {
       /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname) ||
       hostname.endsWith('.local')
     ) {
-      return `http://${hostname}:5000`;
+      return `http://${hostname}:3000`;
     }
   }
   if (process.env.NEXT_PUBLIC_API_URL && process.env.NEXT_PUBLIC_API_URL !== 'undefined') {
     return process.env.NEXT_PUBLIC_API_URL;
   }
-  return 'http://localhost:5000';
+  return 'http://localhost:3000';
 };
 
 export const API_URL = getApiUrl();

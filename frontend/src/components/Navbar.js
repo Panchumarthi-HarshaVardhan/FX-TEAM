@@ -9,10 +9,8 @@ import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { useTheme } from '../context/ThemeContext';
 import ConfirmationModal from './ConfirmationModal';
-import dynamic from 'next/dynamic';
 import { API_URL } from '@/utils/api';
-
-const GlobalSearch = dynamic(() => import('./GlobalSearch'), { ssr: false });
+import GlobalSearch from './GlobalSearch';
 
 export default function Navbar({ dark = false }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

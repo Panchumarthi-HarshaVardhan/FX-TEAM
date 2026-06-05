@@ -391,6 +391,11 @@ function LaunchCard({ product }) {
 
 // Trending Sidebar Component
 function TrendingSidebar() {
+  const triggerAssistant = (suggestion) => {
+    const event = new CustomEvent('trigger-founderx-assistant', { detail: { query: suggestion } });
+    window.dispatchEvent(event);
+  };
+
   return (
     <div className="space-y-6">
       {/* Trending Startups */}
@@ -532,7 +537,11 @@ function TrendingSidebar() {
         </h3>
         <div className="space-y-3">
           {demoAISuggestions.map((suggestion, i) => (
-            <button key={i} className="w-full text-left p-3 bg-white rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition text-sm text-muted">
+            <button 
+              key={i} 
+              onClick={() => triggerAssistant(suggestion)}
+              className="w-full text-left p-3 bg-white rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50 transition text-sm text-muted"
+            >
               {suggestion}
             </button>
           ))}
@@ -556,7 +565,7 @@ export default function Feed() {
       setError('');
       const token = localStorage.getItem('token');
       
-      let url = 'http://localhost:5000/api/posts';
+      let url = 'http://localhost:3000/api/posts';
       // Watch or search filters
       if (activeTab === 'videos') {
         url += '?type=video';

@@ -25,7 +25,7 @@ export default function NotificationsPage() {
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/notifications', {
+      const res = await fetch('http://localhost:3000/api/notifications', {
         headers: { Authorization: `Bearer ${token}` },
         credentials: 'include'
       });
@@ -47,7 +47,7 @@ export default function NotificationsPage() {
   const markAllAsRead = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/notifications/read-all', {
+      const res = await fetch('http://localhost:3000/api/notifications/read-all', {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
         credentials: 'include'
@@ -67,7 +67,7 @@ export default function NotificationsPage() {
   const markAsRead = async (id) => {
     try {
       const token = localStorage.getItem('token');
-      await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+      await fetch(`http://localhost:3000/api/notifications/${id}/read`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
         credentials: 'include'
@@ -89,13 +89,13 @@ export default function NotificationsPage() {
       let body = {};
       
       if (type === 'co_founder_invite') {
-        url = `http://localhost:5000/api/team-invitations/${id}/status`;
+        url = `http://localhost:3000/api/team-invitations/${id}/status`;
         body = { status: action === 'accept' ? 'accepted' : 'rejected' };
       } else if (type === 'investment_request') {
-        url = `http://localhost:5000/api/startups/investment-requests/${id}/status`;
+        url = `http://localhost:3000/api/startups/investment-requests/${id}/status`;
         body = { status: action === 'accept' ? 'accepted' : 'rejected' };
       } else if (type === 'role_request') {
-        url = `http://localhost:5000/api/founder/role-requests/${id}/status`;
+        url = `http://localhost:3000/api/founder/role-requests/${id}/status`;
         body = { status: action === 'accept' ? 'accepted' : 'rejected' };
         method = 'PATCH';
       }

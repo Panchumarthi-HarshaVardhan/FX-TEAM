@@ -22,7 +22,7 @@ export default function WatchPage() {
     try {
       setLoading(true);
       const sortParam = sortBy === 'trending' ? '&sort=trending' : '';
-      let url = `http://localhost:5000/api/posts?type=video${sortParam}`;
+      let url = `http://localhost:3000/api/posts?type=video${sortParam}`;
       
       // We'll handle filtering client-side for now or add query params if backend supports it
       // Backend supports filtering by startupId, but for "has startupId" vs "no startupId" (podcast maybe?) we might need logic.

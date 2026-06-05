@@ -3,7 +3,7 @@ import PublicStartupView from '../../../components/startup/PublicStartupView';
 
 async function getStartup(slug) {
   try {
-    const res = await fetch(`http://localhost:5000/api/startups/${slug}`, {
+    const res = await fetch(`http://localhost:3000/api/startups/${slug}`, {
       cache: 'no-store'
     });
     

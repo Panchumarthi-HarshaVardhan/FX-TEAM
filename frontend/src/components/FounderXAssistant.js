@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -27,7 +27,15 @@ import {
   UploadCloud,
   Paperclip,
   History,
-  Plus
+  Plus,
+  Mic,
+  MicOff,
+  Volume2,
+  Square,
+  Search,
+  Maximize2,
+  Minimize2,
+  Headphones
 } from 'lucide-react';
 import { 
   getAssistantResponse, 
@@ -38,6 +46,7 @@ import {
   formatTrendingPostTags
 } from '../utils/mentorAgent';
 import { useAuth } from '../context/AuthContext';
+import { getSafeImageSrc, getSafeInitial } from '../utils/helpers';
 
 export default function FounderXAssistant() {
   const router = useRouter();
@@ -102,7 +111,33 @@ export default function FounderXAssistant() {
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const API_URL = (typeof window !== 'undefined' ? process.env.NEXT_PUBLIC_API_URL : undefined) || 'http://localhost:5000';
+  // VOICE INPUT STATE
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
+  const voiceRecognitionRef = useRef(null);
+  const silenceTimerRef = useRef(null);
+  const transcriptRef = useRef('');
+  
+  // CONTINUOUS VOICE MODE
+  const [isContinuousMode, setIsContinuousMode] = useState(false);
+  const isContinuousModeRef = useRef(false);
+
+  // VOICE OUTPUT (TTS) STATE
+  const [speakingMsgId, setSpeakingMsgId] = useState(null);
+  const [selectedLang, setSelectedLang] = useState('en-IN');
+  const usedVoiceInput = useRef(false);
+
+  // FULLSCREEN STATE
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
+  // BARGE-IN DETECTION (SpeechRecognition during TTS)
+  const speechRecognitionRef = useRef(null);
+  const bargeInActiveRef = useRef(false);
+
+  const API_URL = (typeof window !== 'undefined' ? process.env.NEXT_PUBLIC_API_URL : undefined) || 'http://localhost:3000';
 
   // QUICK STARTER ACTION BUTTONS
   const quickActions = [
@@ -123,23 +158,38 @@ export default function FounderXAssistant() {
     actions: quickActions
   };
 
+  const getSessionsKey = () => {
+    const userId = user && (user._id || user.id);
+    return userId ? `founderx_assistant_sessions_${userId}_v1` : 'founderx_assistant_sessions_anonymous_v1';
+  };
+
+  const getActiveIdKey = () => {
+    const userId = user && (user._id || user.id);
+    return userId ? `founderx_assistant_active_id_${userId}_v1` : 'founderx_assistant_active_id_anonymous_v1';
+  };
+
   // LOAD LOGS & PREFERENCES WITH MULTI-SESSION LIFE-CYCLE
   useEffect(() => {
+    const sessionsKey = getSessionsKey();
+    const activeIdKey = getActiveIdKey();
+
     // 1. Load the list of sessions
-    const storedSessions = localStorage.getItem('founderx_assistant_sessions_v1');
+    const storedSessions = localStorage.getItem(sessionsKey);
     let loadedSessions = [];
     if (storedSessions) {
       try {
         loadedSessions = JSON.parse(storedSessions);
         setSessions(loadedSessions);
       } catch (e) {}
+    } else {
+      setSessions([]);
     }
 
-    // 2. Start a fresh new empty session every time they open/refresh the webpage
+    // 2. Start a fresh new empty session every time they switch users or open the page
     const freshSessionId = Date.now().toString();
     setActiveSessionId(freshSessionId);
     setMessages([welcomeMessage]);
-    localStorage.setItem('founderx_assistant_active_id_v1', freshSessionId);
+    localStorage.setItem(activeIdKey, freshSessionId);
 
     // 3. Load Theme
     const storedTheme = localStorage.getItem('founderx_assistant_theme');
@@ -154,13 +204,29 @@ export default function FounderXAssistant() {
     }, 2000);
 
     return () => clearTimeout(pulseTimer);
-  }, []);
+  }, [user]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsFullScreen(false);
+      setIsContinuousMode(false);
+      isContinuousModeRef.current = false;
+      stopRecording();
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      setSpeakingMsgId(null);
+    }
+  }, [isOpen]);
 
   // MULTI-SESSION UTILITIES
   const saveHistory = (updatedMessages) => {
     setMessages(updatedMessages);
 
-    const storedSessions = localStorage.getItem('founderx_assistant_sessions_v1');
+    const sessionsKey = getSessionsKey();
+    const activeIdKey = getActiveIdKey();
+
+    const storedSessions = localStorage.getItem(sessionsKey);
     let currentSessions = [];
     if (storedSessions) {
       try {
@@ -221,12 +287,14 @@ export default function FounderXAssistant() {
     currentSessions.sort((a, b) => b.updatedAt - a.updatedAt);
 
     setSessions(currentSessions);
-    localStorage.setItem('founderx_assistant_sessions_v1', JSON.stringify(currentSessions));
-    localStorage.setItem('founderx_assistant_active_id_v1', activeId);
+    localStorage.setItem(sessionsKey, JSON.stringify(currentSessions));
+    localStorage.setItem(activeIdKey, activeId);
   };
 
   const selectSession = (sessionId) => {
-    const storedSessions = localStorage.getItem('founderx_assistant_sessions_v1');
+    const sessionsKey = getSessionsKey();
+    const activeIdKey = getActiveIdKey();
+    const storedSessions = localStorage.getItem(sessionsKey);
     if (storedSessions) {
       try {
         const currentSessions = JSON.parse(storedSessions);
@@ -234,7 +302,7 @@ export default function FounderXAssistant() {
         if (session) {
           setActiveSessionId(sessionId);
           setMessages(session.messages);
-          localStorage.setItem('founderx_assistant_active_id_v1', sessionId);
+          localStorage.setItem(activeIdKey, sessionId);
           
           // Clear active action forms to prevent overlapping action states
           setActiveAction(null);
@@ -247,10 +315,11 @@ export default function FounderXAssistant() {
   };
 
   const startNewChat = () => {
+    const activeIdKey = getActiveIdKey();
     const newSessionId = Date.now().toString();
     setActiveSessionId(newSessionId);
     setMessages([welcomeMessage]);
-    localStorage.setItem('founderx_assistant_active_id_v1', newSessionId);
+    localStorage.setItem(activeIdKey, newSessionId);
     
     setActiveAction(null);
     setFormStep(0);
@@ -261,13 +330,14 @@ export default function FounderXAssistant() {
   const deleteSession = (sessionId, e) => {
     e.stopPropagation(); // Avoid selecting the deleted item
     if (window.confirm("Are you sure you want to delete this chat session?")) {
-      const storedSessions = localStorage.getItem('founderx_assistant_sessions_v1');
+      const sessionsKey = getSessionsKey();
+      const storedSessions = localStorage.getItem(sessionsKey);
       if (storedSessions) {
         try {
           let currentSessions = JSON.parse(storedSessions);
           currentSessions = currentSessions.filter(s => s.id !== sessionId);
           setSessions(currentSessions);
-          localStorage.setItem('founderx_assistant_sessions_v1', JSON.stringify(currentSessions));
+          localStorage.setItem(sessionsKey, JSON.stringify(currentSessions));
           
           if (activeSessionId === sessionId) {
             startNewChat();
@@ -280,6 +350,30 @@ export default function FounderXAssistant() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  const [pendingTrigger, setPendingTrigger] = useState(null);
+
+  useEffect(() => {
+    const handleTriggerAssistant = (e) => {
+      const query = e.detail?.query || '';
+      setIsOpen(true);
+      setHasUnread(false);
+      setErrorState(null);
+      if (query) {
+        setPendingTrigger(query);
+      }
+    };
+
+    window.addEventListener('trigger-founderx-assistant', handleTriggerAssistant);
+    return () => window.removeEventListener('trigger-founderx-assistant', handleTriggerAssistant);
+  }, []);
+
+  useEffect(() => {
+    if (pendingTrigger) {
+      handleSendMessage(pendingTrigger);
+      setPendingTrigger(null);
+    }
+  }, [pendingTrigger]);
 
   useEffect(() => {
     if (isOpen) {
@@ -417,40 +511,282 @@ export default function FounderXAssistant() {
           name: file.name,
           type: data.type
         });
+        
+        // Advance flow if active
+        if (activeAction === 'UPLOAD_PITCH') {
+          const pData = { ...pitchData, fileName: file.name, fileSize: `${(file.size / 1024 / 1024).toFixed(1)} MB` };
+          setPitchData(pData);
+          setFormStep(2);
+          setPublishingState('idle');
+          pushPreviewMsg('PITCH_PREVIEW', pData, messages);
+        } else if (activeAction === 'UPLOAD_VIDEO') {
+          const vData = { ...videoData, fileName: file.name, fileSize: `${(file.size / 1024 / 1024).toFixed(1)} MB` };
+          setVideoData(vData);
+          setFormStep(3);
+          setPublishingState('idle');
+          pushPreviewMsg('VIDEO_PREVIEW', vData, messages);
+        }
       } else {
         throw new Error(data.error || 'Upload failed');
       }
     } catch (err) {
-      console.warn('File upload failed, using local mock fallback for hackathon:', err);
-      const mockUrl = file.type.startsWith('video/')
-        ? 'https://cloudinary.com/founderx-video-mock.mp4'
-        : 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=modern%2520startup%2520SaaS%252520dashboard%2520beautiful%2520gradient%2520analytics&image_size=landscape';
-      setPendingMedia({
-        url: mockUrl,
-        name: file.name,
-        type: file.type.startsWith('video/') ? 'video' : 'image'
-      });
+      console.error('File upload failed:', err);
+      setErrorState('File upload failed: ' + err.message);
     } finally {
       setUploadingMedia(false);
     }
   };
 
-  // DISPATCHER INCOMING MESSAGES
-  const handleSendMessage = async (textToSend) => {
-    const isTextEmpty = !textToSend.trim();
-    if (isTextEmpty && !pendingMedia) return;
+  // VOICE RECORDING CONTROLS
+  const startRecording = async () => {
+    // Stop any barge-in detection before starting full recording
+    stopBargeInDetection();
 
-    const actualText = isTextEmpty ? 'Optimize and analyze my uploaded startup media for a post!' : textToSend;
+    if (voiceRecognitionRef.current) {
+      try { voiceRecognitionRef.current.stop(); } catch (e) {}
+    }
+    
+    const SpeechRecognition = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser. Please use Chrome or Safari.");
+      return;
+    }
+
+    try {
+      transcriptRef.current = '';
+      setInputValue('');
+      setErrorState(null);
+      usedVoiceInput.current = true;
+
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = selectedLang;
+
+      recognition.onresult = (event) => {
+        let interimTranscript = '';
+        let finalTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        const fullTranscript = finalTranscript + interimTranscript;
+        transcriptRef.current = fullTranscript;
+        setInputValue(fullTranscript);
+
+        // Reset silence timer in continuous mode
+        if (isContinuousModeRef.current) {
+          if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = setTimeout(() => {
+            if (transcriptRef.current.trim()) {
+              stopRecording();
+            }
+          }, 1500); // 1.5 seconds of silence
+        }
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+        voiceRecognitionRef.current = null;
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
+
+        const textToSend = transcriptRef.current.trim();
+        if (textToSend) {
+          handleSendMessage(textToSend);
+        } else {
+          // If in continuous mode and nothing was spoken, keep listening after a short delay
+          if (isContinuousModeRef.current && !speakingMsgId && !isTyping) {
+            setTimeout(() => {
+              if (isContinuousModeRef.current && !speakingMsgId && !isTyping && !voiceRecognitionRef.current) {
+                startRecording();
+              }
+            }, 1000);
+          }
+        }
+      };
+
+      recognition.onerror = (event) => {
+        console.warn("Voice recognition error:", event.error);
+        if (event.error !== 'no-speech' && event.error !== 'aborted' && event.error !== 'not-allowed') {
+          setErrorState("Voice input error: " + event.error);
+        }
+        setIsRecording(false);
+        voiceRecognitionRef.current = null;
+      };
+
+      voiceRecognitionRef.current = recognition;
+      setIsRecording(true);
+      recognition.start();
+
+    } catch (err) {
+      console.error("Microphone access denied or error:", err);
+      alert("Could not access microphone/speech recognition. Please check permissions.");
+    }
+  };
+
+  const stopRecording = () => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (voiceRecognitionRef.current) {
+      try {
+        voiceRecognitionRef.current.stop();
+      } catch (e) {}
+      voiceRecognitionRef.current = null;
+    }
+    setIsRecording(false);
+  };
+
+  const handleManualStop = () => {
+    setIsContinuousMode(false);
+    isContinuousModeRef.current = false;
+    stopRecording();
+    stopBargeInDetection();
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setSpeakingMsgId(null);
+  };
+
+  const handleStopSpeakingOrRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    }
+    if (speakingMsgId) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      setSpeakingMsgId(null);
+    }
+  };
+
+  // BARGE-IN DETECTION: Use SpeechRecognition to detect user speech during TTS
+  const startBargeInDetection = useCallback(() => {
+    const SpeechRecognition = typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
+    if (!SpeechRecognition) return;
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = selectedLang;
+
+      recognition.onresult = () => {
+        // User started speaking — barge in!
+        bargeInActiveRef.current = true;
+        
+        // 1. Cancel TTS immediately
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+        }
+        setSpeakingMsgId(null);
+        
+        // 2. Stop detection recognition
+        try { recognition.stop(); } catch (e) {}
+        speechRecognitionRef.current = null;
+        
+        // 3. Start full recording
+        startRecording();
+      };
+
+      recognition.onerror = (event) => {
+        // Ignore 'no-speech' and 'aborted' errors silently
+        if (event.error !== 'no-speech' && event.error !== 'aborted') {
+          console.warn('Barge-in detection error:', event.error);
+        }
+        speechRecognitionRef.current = null;
+        bargeInActiveRef.current = false;
+      };
+
+      recognition.onend = () => {
+        // If continuous mode is still active and TTS is still playing, restart detection
+        if (isContinuousModeRef.current && speakingMsgId && !bargeInActiveRef.current) {
+          try { recognition.start(); } catch (e) {}
+        } else {
+          speechRecognitionRef.current = null;
+        }
+      };
+
+      speechRecognitionRef.current = recognition;
+      bargeInActiveRef.current = false;
+      recognition.start();
+    } catch (err) {
+      console.warn('Could not start barge-in detection:', err);
+    }
+  }, [speakingMsgId]);
+
+  const stopBargeInDetection = useCallback(() => {
+    if (speechRecognitionRef.current) {
+      try { speechRecognitionRef.current.stop(); } catch (e) {}
+      speechRecognitionRef.current = null;
+    }
+    bargeInActiveRef.current = false;
+  }, []);
+
+  // VOICE OUTPUT (TTS)
+  const speakText = (text, msgId) => {
+    if ('speechSynthesis' in window) {
+      if (speakingMsgId === msgId) {
+        window.speechSynthesis.cancel();
+        setSpeakingMsgId(null);
+        return;
+      }
+      
+      window.speechSynthesis.cancel();
+      
+      // Clean up markdown/emojis for speech
+      const cleanText = text.replace(/[*_#]/g, '').replace(/[\u{1F600}-\u{1F6FF}]/gu, '');
+      
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = selectedLang;
+      utterance.onend = () => {
+        setSpeakingMsgId(null);
+        if (isContinuousModeRef.current) {
+          setTimeout(() => {
+            startRecording();
+          }, 800); // Small pause before auto-recording again
+        }
+      };
+      utterance.onerror = () => {
+        setSpeakingMsgId(null);
+        if (isContinuousModeRef.current) {
+          setTimeout(() => {
+            startRecording();
+          }, 800);
+        }
+      };
+      
+      setSpeakingMsgId(msgId);
+      window.speechSynthesis.speak(utterance);
+    } else {
+      alert("Text-to-speech is not supported in this browser.");
+    }
+  };
+
+  // DISPATCHER INCOMING MESSAGES
+  const handleSendMessage = async (textToSend, directAudioFile = null) => {
+    const isTextEmpty = !textToSend.trim();
+    if (isTextEmpty && !pendingMedia && !directAudioFile) return;
+
+    const actualText = isTextEmpty && pendingMedia ? 'Analyze this uploaded media' : textToSend;
 
     const userMsg = {
       id: Date.now().toString(),
       sender: 'user',
-      text: actualText,
+      text: actualText || '🎤 Voice Message',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      media: pendingMedia // Store pending media
+      media: pendingMedia || (directAudioFile ? { name: 'Voice Note', type: 'audio' } : null)
     };
 
-    const mediaToSend = pendingMedia;
+    const mediaToSend = directAudioFile ? { file: directAudioFile, type: 'audio' } : pendingMedia;
     setPendingMedia(null); // Clear pending media state instantly after capturing
 
     const updatedWithUser = [...messages, userMsg];
@@ -490,15 +826,37 @@ export default function FounderXAssistant() {
     setErrorState(null);
 
     try {
+      const jwtToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      let reqBody, reqHeaders;
+
+      if (mediaToSend && mediaToSend.file) {
+        // Send as FormData if there is a raw file (e.g. recorded voice)
+        reqBody = new FormData();
+        reqBody.append('messages', JSON.stringify(messages));
+        reqBody.append('userPrompt', actualText);
+        reqBody.append('file', mediaToSend.file);
+        reqBody.append('language', selectedLang);
+        
+        reqHeaders = {};
+        if (jwtToken) reqHeaders['Authorization'] = `Bearer ${jwtToken}`;
+      } else {
+        // Send as JSON
+        reqBody = JSON.stringify({
+          messages: messages, // Send history
+          userPrompt: combinedPrompt,
+          language: selectedLang
+        });
+        
+        reqHeaders = {
+          'Content-Type': 'application/json'
+        };
+        if (jwtToken) reqHeaders['Authorization'] = `Bearer ${jwtToken}`;
+      }
+
       const res = await fetch(`${API_URL}/api/assistant/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          messages: messages, // Send history
-          userPrompt: combinedPrompt
-        })
+        headers: reqHeaders,
+        body: reqBody
       });
 
       const data = await res.json();
@@ -511,12 +869,17 @@ export default function FounderXAssistant() {
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           actions: data.actions || [],
           route: data.route || null,
-          media: mediaToSend // Bind media metadata to post if returned
+          media: mediaToSend, // Bind media metadata to post if returned
+          type: data.type || null,
+          previewData: data.data || null
         };
 
         const updatedHistory = [...updatedWithUser, aiMsg];
         setMessages(updatedHistory);
         saveHistory(updatedHistory);
+        if (isContinuousModeRef.current || usedVoiceInput.current) {
+          speakText(aiMsg.text, aiMsg.id);
+        }
       } else {
         throw new Error(data.message || 'Groq server returned an error');
       }
@@ -529,14 +892,20 @@ export default function FounderXAssistant() {
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         actions: responseData.actions || [],
         route: responseData.route || null,
-        media: mediaToSend // Bind media
+        media: mediaToSend, // Bind media
+        type: responseData.type || null,
+        previewData: responseData.data || null
       };
 
       const updatedHistory = [...updatedWithUser, aiMsg];
       setMessages(updatedHistory);
       saveHistory(updatedHistory);
+      if (isContinuousModeRef.current || usedVoiceInput.current) {
+        speakText(aiMsg.text, aiMsg.id);
+      }
     } finally {
       setIsTyping(false);
+      usedVoiceInput.current = false;
     }
   };
 
@@ -1584,22 +1953,6 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
   };
 
   // MOCK FILE DRAG AND DROP SIMULATORS
-  const handleFileDropMock = (fileName, fileSize) => {
-    if (activeAction === 'UPLOAD_PITCH') {
-      const data = { ...pitchData, fileName, fileSize };
-      setPitchData(data);
-      setFormStep(2);
-      setPublishingState('idle');
-      pushPreviewMsg('PITCH_PREVIEW', data, messages);
-    } else if (activeAction === 'UPLOAD_VIDEO') {
-      const data = { ...videoData, fileName, fileSize };
-      setVideoData(data);
-      setFormStep(3);
-      setPublishingState('idle');
-      pushPreviewMsg('VIDEO_PREVIEW', data, messages);
-    }
-  };
-
   // ================= GENERAL API PUBLISHING ENGINE (Milestone 2 APIs) =================
   const handlePublishAction = async (previewData, actionType) => {
     // 1. SECURITY RULES: Check if user is logged in
@@ -1782,33 +2135,54 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
   };
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 font-sans ${theme}`}>
+    <div className={`font-sans ${theme} ${isFullScreen ? 'fixed inset-0 z-[85] pointer-events-none' : 'fixed bottom-6 right-6 z-50'}`}>
       {/* Decoupled chatbot panel wrapper */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.92, y: 20 }}
-            transition={{ type: "spring", stiffness: 260, damping: 24 }}
-            onDragOver={(e) => { e.preventDefault(); setIsDraggingFile(true); }}
-            onDragLeave={() => setIsDraggingFile(false)}
-            onDrop={(e) => { 
-              e.preventDefault(); 
-              setIsDraggingFile(false); 
-              const file = e.dataTransfer.files[0]; 
-              if (file) handleFileUpload(file); 
-            }}
-            className={`
-              fixed bottom-[96px] right-[24px] h-[580px] rounded-[24px] shadow-[0_24px_60px_rgba(10,102,194,0.22)] overflow-hidden flex flex-row border relative transition-all duration-300
-              ${theme === 'light' 
-                ? 'bg-white/85 border-white/20 text-slate-900 backdrop-blur-xl' 
-                : 'bg-slate-950/85 border-slate-800/40 text-slate-100 backdrop-blur-xl'
-              }
-              max-sm:bottom-[84px] max-sm:right-4 max-sm:left-4 max-sm:w-[calc(100vw-32px)] max-sm:h-[calc(100vh-110px)] max-sm:max-h-[560px]
-            `}
-            style={{ width: showHistory && typeof window !== 'undefined' && window.innerWidth >= 640 ? '640px' : '400px' }}
-          >
+          <>
+            {isFullScreen && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsFullScreen(false)}
+                className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[85] pointer-events-auto cursor-pointer"
+              />
+            )}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ type: "spring", stiffness: 260, damping: 26 }}
+              onDragOver={(e) => { e.preventDefault(); setIsDraggingFile(true); }}
+              onDragLeave={() => setIsDraggingFile(false)}
+              onDrop={(e) => { 
+                e.preventDefault(); 
+                setIsDraggingFile(false); 
+                const file = e.dataTransfer.files[0]; 
+                if (file) handleFileUpload(file); 
+              }}
+              className={`
+                pointer-events-auto
+                ${isFullScreen 
+                  ? 'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-[24px] z-[90] max-sm:inset-0 max-sm:translate-x-0 max-sm:translate-y-0 max-sm:w-full max-sm:h-full max-sm:rounded-none shadow-2xl'
+                  : 'fixed bottom-[96px] right-[24px] h-[580px] rounded-[24px] max-sm:bottom-[84px] max-sm:right-4 max-sm:left-4 max-sm:w-[calc(100vw-32px)] max-sm:h-[calc(100vh-110px)] max-sm:max-h-[560px]'
+                }
+                shadow-[0_24px_60px_rgba(10,102,194,0.22)] overflow-hidden flex flex-row border relative transition-all duration-305
+                ${theme === 'light' 
+                  ? 'bg-white/85 border-white/20 text-slate-900 backdrop-blur-xl' 
+                  : 'bg-slate-950/85 border-slate-800/40 text-slate-100 backdrop-blur-xl'
+                }
+              `}
+              style={{ 
+                width: isFullScreen 
+                  ? (typeof window !== 'undefined' && window.innerWidth < 640 ? '100%' : 'min(90vw, 1100px)') 
+                  : (showHistory && typeof window !== 'undefined' && window.innerWidth >= 640 ? '640px' : '400px'),
+                height: isFullScreen
+                  ? (typeof window !== 'undefined' && window.innerWidth < 640 ? '100%' : 'min(85vh, 800px)')
+                  : undefined
+              }}
+            >
             {/* Drag and Drop Visual Overlay */}
             {isDraggingFile && (
               <div className="absolute inset-0 bg-blue-600/10 backdrop-blur-md z-[60] flex flex-col items-center justify-center border-2 border-dashed border-blue-500 rounded-[24px] pointer-events-none">
@@ -1914,6 +2288,23 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
 
                 {/* Control triggers */}
                 <div className="flex items-center gap-1.5 text-slate-400">
+                  <select
+                    value={selectedLang}
+                    onChange={(e) => setSelectedLang(e.target.value)}
+                    className={`text-[10px] font-semibold px-2 py-1 rounded-lg border focus:outline-none transition cursor-pointer mr-1
+                      ${theme === 'light'
+                        ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                        : 'bg-slate-900 border-slate-800 text-slate-350 hover:bg-slate-850'
+                      }`}
+                  >
+                    <option value="en-IN">English (India)</option>
+                    <option value="hi-IN">Hindi (हिंदी)</option>
+                    <option value="te-IN">Telugu (తెలుగు)</option>
+                    <option value="ta-IN">Tamil (தமிழ்)</option>
+                    <option value="kn-IN">Kannada (ಕನ್ನಡ)</option>
+                    <option value="mr-IN">Marathi (मराठी)</option>
+                    <option value="bn-IN">Bengali (বাংলা)</option>
+                  </select>
                   <button 
                     onClick={() => setShowHistory(!showHistory)} 
                     title="Toggle Chat History"
@@ -1924,6 +2315,17 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
                       }`}
                   >
                     <History className="w-4 h-4" />
+                  </button>
+                  <button 
+                    onClick={() => setIsFullScreen(!isFullScreen)} 
+                    title={isFullScreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                    className={`p-1.5 rounded-full transition-all duration-200 hover:scale-105 
+                      ${isFullScreen
+                        ? 'bg-blue-500/15 text-blue-500'
+                        : theme === 'light' ? 'hover:bg-slate-100 hover:text-slate-700' : 'hover:bg-slate-900 hover:text-white'
+                      }`}
+                  >
+                    {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                   </button>
                   <button 
                     onClick={toggleTheme} 
@@ -2702,6 +3104,64 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
                   );
                 }
 
+                if (msg.type === 'search_results') {
+                  const startupsList = msg.previewData || [];
+                  return (
+                    <div key={msg.id || index} className="w-full my-4 flex items-start gap-2.5">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-sky-400 text-white shadow-sm flex items-center justify-center font-bold text-xs flex-shrink-0">
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </div>
+                      <div className="p-4 rounded-2xl border shadow-sm text-left flex-1 max-w-[85%] space-y-3 bg-white border-slate-200 text-slate-800">
+                        <div className="flex items-center gap-2 border-b pb-2 border-slate-100">
+                          <Search className="w-4 h-4 text-blue-500" />
+                          <h4 className="font-bold text-xs uppercase tracking-wider text-slate-700">Search Results</h4>
+                        </div>
+                        {startupsList.length === 0 ? (
+                          <p className="text-xs text-slate-500 font-medium">No startups found matching your query.</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {startupsList.map((startup, sIdx) => {
+                              const logoUrl = getSafeImageSrc(startup.logo);
+                              return (
+                                <div key={sIdx} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100/50 transition">
+                                  <div className="h-10 w-10 rounded-lg overflow-hidden bg-blue-50/50 flex-shrink-0 flex items-center justify-center border border-slate-200/30">
+                                    {logoUrl ? (
+                                      <img src={logoUrl} alt={startup.name} className="h-full w-full object-cover" />
+                                    ) : (
+                                      <div className="h-full w-full flex items-center justify-center text-blue-600 font-bold text-sm bg-blue-50">
+                                        {getSafeInitial(startup.name)}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <h5 className="font-bold text-xs text-slate-900 truncate">{startup.name}</h5>
+                                      <span className="px-1.5 py-0.5 bg-blue-50 text-blue-600 text-[9px] font-bold rounded-md uppercase">
+                                        {startup.stage}
+                                      </span>
+                                    </div>
+                                    <p className="text-[10px] text-slate-450 font-semibold mb-1 truncate">{startup.industry}</p>
+                                    <p className="text-slate-600 text-[11px] line-clamp-1 mb-2 font-medium">{startup.oneLinePitch}</p>
+                                    <button
+                                      onClick={() => {
+                                        setIsOpen(false);
+                                        router.push(`/startups/${startup._id}`);
+                                      }}
+                                      className="px-3 py-1 bg-white hover:bg-slate-50 border border-slate-200 text-blue-600 text-[10px] font-bold rounded-lg transition cursor-pointer"
+                                    >
+                                      View Startup
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
                   <div key={msg.id || index} className={`flex items-start gap-2.5 ${!isAI ? 'flex-row-reverse' : ''}`}>
                     <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center font-bold text-xs shadow-sm
@@ -2771,6 +3231,26 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
                             );
                           })}
                         </div>
+                        
+                        {isAI && (
+                          <div className="mt-2 flex justify-end">
+                            <button
+                              onClick={() => speakText(msg.text, msg.id)}
+                              className={`p-1.5 rounded-full transition-colors flex items-center justify-center cursor-pointer ${
+                                speakingMsgId === msg.id 
+                                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' 
+                                  : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                              }`}
+                              title={speakingMsgId === msg.id ? "Stop reading" : "Read aloud"}
+                            >
+                              {speakingMsgId === msg.id ? (
+                                <Square className="w-3.5 h-3.5 fill-current" />
+                              ) : (
+                                <Volume2 className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       {/* Info footer */}
@@ -2812,7 +3292,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
                                 transition={{ duration: 0.3, delay: actIdx * 0.05 }}
                                 whileHover={{ y: -2 }}
                                 whileTap={{ scale: 0.97 }}
-                                className="group flex items-center gap-2 px-3 py-2 text-[13px] font-medium rounded-xl bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100 border border-zinc-300/80 dark:border-zinc-700 shadow-sm hover:shadow-md hover:border-blue-400 hover:bg-blue-50 dark:hover:bg-zinc-800 transition-all duration-200 active:scale-[0.97] w-fit max-w-fit cursor-pointer text-left"
+                                className="group flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 border-none shadow-sm transition-all duration-200 active:scale-[0.97] w-fit max-w-fit cursor-pointer text-left"
                               >
                                 {icon}
                                 <span>{labelText}</span>
@@ -2832,8 +3312,8 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
                   <div 
                     onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                     onDragLeave={() => setIsDragging(false)}
-                    onDrop={(e) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files[0]; if (file) handleFileDropMock(file.name, `${(file.size / 1024 / 1024).toFixed(1)} MB`); }}
-                    onClick={() => { const mockPdfList = ['Series_Seed_PitchDeck.pdf', 'NexusAI_Pitch_V2.pdf', 'BlockVault_Overview.pdf', 'GreenLeaf_TAM_Presents.pdf']; handleFileDropMock(mockPdfList[Math.floor(Math.random() * mockPdfList.length)], '3.6 MB'); }}
+                    onDrop={(e) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files[0]; if (file) handleFileUpload(file); }}
+                    onClick={() => fileInputRef.current?.click()}
                     className={`border-2 border-dashed rounded-2xl p-6 text-center hover:bg-blue-500/5 transition cursor-pointer flex flex-col items-center gap-2
                       ${isDragging ? 'bg-blue-500/10 border-blue-500 text-blue-600' : 'border-blue-500/35 dark:border-slate-800 text-slate-500'}
                     `}
@@ -2850,8 +3330,8 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
                   <div 
                     onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                     onDragLeave={() => setIsDragging(false)}
-                    onDrop={(e) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files[0]; if (file) handleFileDropMock(file.name, `${(file.size / 1024 / 1024).toFixed(1)} MB`); }}
-                    onClick={() => { const mockVidList = ['founder_pitch_60s.mp4', 'nexusai_pitch_watch.mp4', 'greenleaf_teaser.mp4']; handleFileDropMock(mockVidList[Math.floor(Math.random() * mockVidList.length)], '12.4 MB'); }}
+                    onDrop={(e) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files[0]; if (file) handleFileUpload(file); }}
+                    onClick={() => fileInputRef.current?.click()}
                     className={`border-2 border-dashed rounded-2xl p-6 text-center hover:bg-blue-500/5 transition cursor-pointer flex flex-col items-center gap-2
                       ${isDragging ? 'bg-blue-500/10 border-blue-500 text-blue-600' : 'border-blue-500/35 dark:border-slate-800 text-slate-500'}
                     `}
@@ -2952,7 +3432,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
                 ref={fileInputRef} 
                 onChange={(e) => { const file = e.target.files[0]; if (file) handleFileUpload(file); }}
                 className="hidden" 
-                accept="image/*,video/*" 
+                accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt" 
               />
               
               {/* Paperclip Upload Button */}
@@ -2968,25 +3448,116 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
                 <Paperclip className="w-4 h-4" />
               </button>
 
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder={
-                  activeAction 
-                    ? `Step ${formStep + 1}: Provide details...`
-                    : pendingMedia 
-                      ? "Add description or hit send..." 
-                      : "Type rough milestone (e.g. we launched app)..."
-                }
-                className={`flex-1 px-4 py-2.5 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all border
-                  ${theme === 'light' 
-                    ? 'bg-slate-50 border-slate-200 text-slate-800' 
-                    : 'bg-slate-900 border-slate-800 text-slate-100 focus:bg-slate-900'
-                  }
-                `}
-              />
+              <div className="flex-1 relative">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder={
+                      isRecording
+                        ? "Listening... Speak now..."
+                        : activeAction 
+                          ? `Step ${formStep + 1}: Provide details...`
+                          : pendingMedia 
+                            ? "Add description or hit send..." 
+                            : "How can i help you?"
+                    }
+                    className={`w-full px-4 py-2.5 pr-10 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 transition-all border
+                      ${isRecording
+                        ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/10 text-emerald-800 dark:text-emerald-200 focus:ring-emerald-500/50'
+                        : theme === 'light' 
+                          ? 'bg-slate-50 border-slate-200 text-slate-800 focus:ring-blue-500/50' 
+                          : 'bg-slate-900 border-slate-800 text-slate-100 focus:bg-slate-900 focus:ring-blue-500/50'
+                      }
+                    `}
+                  />
+                
+                {(isRecording || (!isRecording && !inputValue.trim())) && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    {(!isRecording || isContinuousMode) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextVal = !isContinuousMode;
+                          setIsContinuousMode(nextVal);
+                          isContinuousModeRef.current = nextVal;
+                          if (nextVal) {
+                            startRecording();
+                          } else {
+                            stopRecording();
+                            stopBargeInDetection();
+                            if ('speechSynthesis' in window) {
+                              window.speechSynthesis.cancel();
+                            }
+                            setSpeakingMsgId(null);
+                          }
+                        }}
+                        title={isContinuousMode ? 'Disable Hands-Free Mode' : 'Enable Hands-Free Mode'}
+                        className={`p-1.5 rounded-lg transition-all duration-200 cursor-pointer flex items-center gap-1 ${
+                          isContinuousMode
+                            ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 shadow-sm ring-1 ring-emerald-300/50 dark:ring-emerald-700/50' 
+                            : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:text-slate-500 dark:hover:text-blue-400 dark:hover:bg-slate-800'
+                        }`}
+                      >
+                        <Headphones className="w-3.5 h-3.5" />
+                        {isContinuousMode && <span className="text-[9px] font-bold uppercase tracking-wider">ON</span>}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isRecording) {
+                          stopRecording();
+                        } else {
+                          startRecording();
+                        }
+                      }}
+                      disabled={uploadingMedia || isTyping}
+                      title={isRecording ? "Stop listening" : "Click to speak (Push-to-Talk)"}
+                      className={`p-1.5 rounded-lg transition-all duration-200 cursor-pointer select-none
+                        ${isRecording 
+                          ? 'bg-red-100 text-red-600 animate-pulse dark:bg-red-950/40 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/60' 
+                          : theme === 'light' 
+                            ? 'text-slate-400 hover:text-blue-600 hover:bg-blue-50 active:bg-blue-100 active:text-blue-700 active:scale-110' 
+                            : 'text-slate-500 hover:text-blue-400 hover:bg-slate-850 active:bg-blue-900/40 active:text-blue-300 active:scale-110'
+                        }
+                      `}
+                    >
+                      {isRecording ? <Square className="w-3.5 h-3.5" /> : <Mic className="w-4 h-4" />}
+                    </button>
+                  </div>
+                )}
+
+                {/* Continuous mode listening/speaking indicator */}
+                {isContinuousMode && isRecording && !inputValue.trim() && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                    <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span className="text-[9px] font-bold uppercase tracking-wider">Listening</span>
+                    </span>
+                  </div>
+                )}
+                {isContinuousMode && speakingMsgId && !isRecording && (
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                    <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+                      <Volume2 className="w-3 h-3 animate-pulse" />
+                      <span className="text-[9px] font-bold uppercase tracking-wider">Speaking</span>
+                    </span>
+                  </div>
+                )}
+              </div>
+              {(isRecording || speakingMsgId) && (
+                <button
+                  type="button"
+                  onClick={handleStopSpeakingOrRecording}
+                  className="p-2.5 rounded-xl bg-red-550 hover:bg-red-650 text-white font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-md shadow-red-500/20"
+                  title={isRecording ? "Stop Recording" : "Stop Speaking"}
+                >
+                  <Square className="w-3.5 h-3.5 fill-white" />
+                  <span>{isRecording ? "Stop" : "Stop Speaking"}</span>
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={(!inputValue.trim() && !pendingMedia) || isTyping || uploadingMedia}
@@ -3004,6 +3575,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
             </form>
           </div>
         </motion.div>
+          </>
         )}
       </AnimatePresence>
 
@@ -3082,11 +3654,11 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
       </AnimatePresence>
 
       {/* FLOATING ACTION TRIGGER TRIGGER */}
+      {!(isFullScreen && isOpen) && (
       <motion.button
         onClick={toggleOpen}
         whileHover={{ scale: 1.06, y: -2 }}
         whileTap={{ scale: 0.95 }}
-        suppressHydrationWarning={true}
         style={{
           position: 'fixed',
           bottom: '24px',
@@ -3096,7 +3668,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
           zIndex: 50
         }}
         className={`
-          rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(10,102,194,0.38)] border border-white/10
+          rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(10,102,194,0.38)] border border-white/10 pointer-events-auto
           ${isOpen 
             ? 'bg-gradient-to-tr from-slate-700 to-slate-850 text-white' 
             : 'bg-gradient-to-tr from-blue-600 via-primary to-sky-400 text-white'
@@ -3119,6 +3691,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
           <MessageCircle className="w-5.5 h-5.5" />
         )}
       </motion.button>
+      )}
     </div>
   );
 }
