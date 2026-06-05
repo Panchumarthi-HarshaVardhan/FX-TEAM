@@ -13,7 +13,7 @@ export default function UsernameRedirect() {
   useEffect(() => {
     const resolveUsername = async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/users/handle/${username}`);
+        const res = await fetch(`http://localhost:3000/api/users/handle/${username}`);
         
         const contentType = res.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {

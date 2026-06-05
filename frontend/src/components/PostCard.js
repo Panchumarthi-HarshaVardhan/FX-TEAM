@@ -57,7 +57,7 @@ export default function PostCard({ post: initialPost, darkTheme = false, refresh
       const token = localStorage.getItem('token');
       if (!token) return; 
 
-      const res = await fetch(`http://localhost:5000/api/posts/${post._id}/like`, {
+      const res = await fetch(`http://localhost:3000/api/posts/${post._id}/like`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -94,7 +94,7 @@ export default function PostCard({ post: initialPost, darkTheme = false, refresh
         quoteBody: withQuote ? quoteBody : undefined
       };
 
-      const res = await fetch(`http://localhost:5000/api/posts`, {
+      const res = await fetch(`http://localhost:3000/api/posts`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -128,7 +128,7 @@ export default function PostCard({ post: initialPost, darkTheme = false, refresh
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
-      const res = await fetch(`http://localhost:5000/api/posts/${post._id}/save`, {
+      const res = await fetch(`http://localhost:3000/api/posts/${post._id}/save`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -158,7 +158,7 @@ export default function PostCard({ post: initialPost, darkTheme = false, refresh
       const token = localStorage.getItem('token');
       if (!token) return;
       
-      const res = await fetch(`http://localhost:5000/api/users/pin/${post._id}`, {
+      const res = await fetch(`http://localhost:3000/api/users/pin/${post._id}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -181,7 +181,7 @@ export default function PostCard({ post: initialPost, darkTheme = false, refresh
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const res = await fetch(`http://localhost:5000/api/posts/${post._id}/react`, {
+      const res = await fetch(`http://localhost:3000/api/posts/${post._id}/react`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

@@ -23,7 +23,7 @@ export default function PostPage() {
 
   const fetchPost = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/posts/${id}`, {
+      const res = await fetch(`http://localhost:3000/api/posts/${id}`, {
         headers: {
             'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
         },
@@ -54,7 +54,7 @@ export default function PostPage() {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const res = await fetch('http://localhost:5000/api/posts', {
+      const res = await fetch('http://localhost:3000/api/posts', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

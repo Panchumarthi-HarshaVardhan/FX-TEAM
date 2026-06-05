@@ -26,7 +26,7 @@ export default function BookmarksPage() {
   const fetchBookmarks = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/users/bookmarks', {
+      const res = await fetch('http://localhost:3000/api/users/bookmarks', {
         headers: { Authorization: `Bearer ${token}` }
       });
       

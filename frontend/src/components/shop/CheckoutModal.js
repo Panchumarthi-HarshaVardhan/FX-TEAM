@@ -50,7 +50,7 @@ export default function CheckoutModal({ product, items, isOpen, onClose, onSucce
         
         // Release sequentially or create batch release (for now loop)
         for (const id of idsToRelease) {
-            await fetch('http://localhost:5000/api/orders/release', {
+            await fetch('http://localhost:3000/api/orders/release', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -76,10 +76,10 @@ export default function CheckoutModal({ product, items, isOpen, onClose, onSucce
       let url, body;
       
       if (isCart) {
-          url = 'http://localhost:5000/api/orders/lock-batch';
+          url = 'http://localhost:3000/api/orders/lock-batch';
           body = { items: items.map(i => ({ productId: i.product._id, quantity: i.quantity })) };
       } else {
-          url = 'http://localhost:5000/api/orders/lock';
+          url = 'http://localhost:3000/api/orders/lock';
           body = { productId: product._id, quantity };
       }
 
@@ -130,7 +130,7 @@ export default function CheckoutModal({ product, items, isOpen, onClose, onSucce
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5000/api/orders', {
+      const res = await fetch('http://localhost:3000/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -36,7 +36,7 @@ export default function ProductDetailPage() {
     try {
       setLoading(true);
       setError('');
-      const res = await fetch(`http://localhost:5000/api/products/${id}`);
+      const res = await fetch(`http://localhost:3000/api/products/${id}`);
       const contentType = res.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         throw new Error('Invalid response');

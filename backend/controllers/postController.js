@@ -16,7 +16,7 @@ const savePostFileLocally = async (req, file) => {
   if (!fs.existsSync(postDir)) fs.mkdirSync(postDir, { recursive: true });
 
   const timestamp = Date.now();
-  const host = req.get('host') || 'localhost:5000';
+  const host = req.get('host') || 'localhost:3000';
   const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
 
   const cleanName = file.originalname.replace(/[^a-zA-Z0-9.]/g, '_');

@@ -110,7 +110,7 @@ export default function MailboxPage() {
   const fetchMails = async (folder) => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/mail/${folder}`, {
+      const res = await fetch(`http://localhost:3000/api/mail/${folder}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -136,8 +136,8 @@ export default function MailboxPage() {
     try {
       const headers = { Authorization: `Bearer ${token}` };
       const [inboxRes, requestsRes] = await Promise.all([
-        fetch('http://localhost:5000/api/mail/inbox', { headers }),
-        fetch('http://localhost:5000/api/mail/requests', { headers })
+        fetch('http://localhost:3000/api/mail/inbox', { headers }),
+        fetch('http://localhost:3000/api/mail/requests', { headers })
       ]);
       const inboxData = await inboxRes.json();
       const requestsData = await requestsRes.json();
@@ -153,7 +153,7 @@ export default function MailboxPage() {
 
   const fetchOwnedStartups = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/dashboard/founder', {
+      const res = await fetch('http://localhost:3000/api/dashboard/founder', {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -170,7 +170,7 @@ export default function MailboxPage() {
     
     // Fetch full populated details from API
     try {
-      const res = await fetch(`http://localhost:5000/api/mail/${mail._id}`, {
+      const res = await fetch(`http://localhost:3000/api/mail/${mail._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -184,7 +184,7 @@ export default function MailboxPage() {
     // Mark as read if received and unread
     if (!mail.isRead && mail.receiverId?._id === user.id) {
       try {
-        const res = await fetch(`http://localhost:5000/api/mail/${mail._id}/read`, {
+        const res = await fetch(`http://localhost:3000/api/mail/${mail._id}/read`, {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -204,7 +204,7 @@ export default function MailboxPage() {
   const handleToggleStar = async (e, mailId) => {
     e.stopPropagation();
     try {
-      const res = await fetch(`http://localhost:5000/api/mail/${mailId}/star`, {
+      const res = await fetch(`http://localhost:3000/api/mail/${mailId}/star`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -223,7 +223,7 @@ export default function MailboxPage() {
 
   const handleArchiveMail = async (mailId) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/mail/${mailId}/archive`, {
+      const res = await fetch(`http://localhost:3000/api/mail/${mailId}/archive`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -240,7 +240,7 @@ export default function MailboxPage() {
 
   const handleDeleteMail = async (mailId) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/mail/${mailId}`, {
+      const res = await fetch(`http://localhost:3000/api/mail/${mailId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -257,7 +257,7 @@ export default function MailboxPage() {
 
   const handleRestoreMail = async (mailId) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/mail/${mailId}/restore`, {
+      const res = await fetch(`http://localhost:3000/api/mail/${mailId}/restore`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -287,7 +287,7 @@ export default function MailboxPage() {
     setUserSearching(true);
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`http://localhost:5000/api/mail/users/search?q=${val}`, {
+        const res = await fetch(`http://localhost:3000/api/mail/users/search?q=${val}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
@@ -326,7 +326,7 @@ export default function MailboxPage() {
 
     setActionLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/mail/compose', {
+      const res = await fetch('http://localhost:3000/api/mail/compose', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -375,7 +375,7 @@ export default function MailboxPage() {
 
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/mail/${selectedMail._id}/reply`, {
+      const res = await fetch(`http://localhost:3000/api/mail/${selectedMail._id}/reply`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -404,7 +404,7 @@ export default function MailboxPage() {
   const handleAcceptRequest = async (mailId) => {
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/mail/${mailId}/accept`, {
+      const res = await fetch(`http://localhost:3000/api/mail/${mailId}/accept`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -415,7 +415,7 @@ export default function MailboxPage() {
         fetchMails(currentFolder);
         fetchCounts();
         if (selectedMail && selectedMail._id === mailId) {
-          const detailRes = await fetch(`http://localhost:5000/api/mail/${mailId}`, {
+          const detailRes = await fetch(`http://localhost:3000/api/mail/${mailId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           const detailData = await detailRes.json();
@@ -434,7 +434,7 @@ export default function MailboxPage() {
   const handleRejectRequest = async (mailId) => {
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/mail/${mailId}/reject`, {
+      const res = await fetch(`http://localhost:3000/api/mail/${mailId}/reject`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -444,7 +444,7 @@ export default function MailboxPage() {
         fetchMails(currentFolder);
         fetchCounts();
         if (selectedMail && selectedMail._id === mailId) {
-          const detailRes = await fetch(`http://localhost:5000/api/mail/${mailId}`, {
+          const detailRes = await fetch(`http://localhost:3000/api/mail/${mailId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           const detailData = await detailRes.json();
@@ -463,7 +463,7 @@ export default function MailboxPage() {
   const handleConnectRequest = async (mailId) => {
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/mail/${mailId}/connect`, {
+      const res = await fetch(`http://localhost:3000/api/mail/${mailId}/connect`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -473,7 +473,7 @@ export default function MailboxPage() {
         fetchMails(currentFolder);
         fetchCounts();
         if (selectedMail && selectedMail._id === mailId) {
-          const detailRes = await fetch(`http://localhost:5000/api/mail/${mailId}`, {
+          const detailRes = await fetch(`http://localhost:3000/api/mail/${mailId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           const detailData = await detailRes.json();
@@ -492,7 +492,7 @@ export default function MailboxPage() {
   const handleInterviewRequest = async (mailId) => {
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/mail/${mailId}/interview`, {
+      const res = await fetch(`http://localhost:3000/api/mail/${mailId}/interview`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -502,7 +502,7 @@ export default function MailboxPage() {
         fetchMails(currentFolder);
         fetchCounts();
         if (selectedMail && selectedMail._id === mailId) {
-          const detailRes = await fetch(`http://localhost:5000/api/mail/${mailId}`, {
+          const detailRes = await fetch(`http://localhost:3000/api/mail/${mailId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           const detailData = await detailRes.json();
@@ -524,7 +524,7 @@ export default function MailboxPage() {
     
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/mail/${selectedMail._id}/mark-invested`, {
+      const res = await fetch(`http://localhost:3000/api/mail/${selectedMail._id}/mark-invested`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -542,7 +542,7 @@ export default function MailboxPage() {
         setInvestedForm({ amount: '', equity: '' });
         fetchMails(currentFolder);
         // Refresh selectedMail details
-        const detailRes = await fetch(`http://localhost:5000/api/mail/${selectedMail._id}`, {
+        const detailRes = await fetch(`http://localhost:3000/api/mail/${selectedMail._id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const detailData = await detailRes.json();

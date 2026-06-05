@@ -15,7 +15,7 @@ export default function VerificationModal({ isOpen, onClose, targetType, targetI
     setLoading(true);
 
     try {
-      const res = await fetch('http://localhost:5000/api/verification', {
+      const res = await fetch('http://localhost:3000/api/verification', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

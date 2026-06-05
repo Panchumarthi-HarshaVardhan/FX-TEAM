@@ -30,7 +30,7 @@ export default function HashtagPage() {
       }
 
       // Allow public access to hashtags
-      const res = await fetch(`http://localhost:5000/api/posts/hashtag/${tag}`, {
+      const res = await fetch(`http://localhost:3000/api/posts/hashtag/${tag}`, {
         headers
       });
       
