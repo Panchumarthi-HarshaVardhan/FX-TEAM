@@ -54,4 +54,4 @@ const messageSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Message', messageSchema);
+module.exports = require('../utils/firebaseModel').models.Message;

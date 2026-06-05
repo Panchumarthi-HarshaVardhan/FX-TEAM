@@ -50,4 +50,4 @@ const conversationSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Conversation', conversationSchema);
+module.exports = require('../utils/firebaseModel').models.Conversation;

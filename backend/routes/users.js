@@ -41,8 +41,7 @@ router.get('/handle/:username', optionalProtect, getUserByUsername); // Legacy s
 router.get('/:id/followers', optionalProtect, getFollowers);
 router.get('/:id/following', optionalProtect, getFollowing);
 router.get('/:id/mutuals', protect, getMutualConnections);
-router.route('/:id([0-9a-fA-F]{24})').get(optionalProtect, getUser); // ID check first
-router.get('/:username', optionalProtect, getUserByUsername); // Fallback to username
+router.route('/:id').get(optionalProtect, getUser);
 router.route('/').get(optionalProtect, getUsers);
 router.route('/pin/:postId').put(protect, togglePinPost);
 router.route('/:id/follow').post(protect, followLimiter, followUser);

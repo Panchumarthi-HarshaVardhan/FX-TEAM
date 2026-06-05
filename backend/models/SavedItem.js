@@ -20,4 +20,4 @@ const savedItemSchema = new mongoose.Schema({
 // Compound index to prevent duplicate saves
 savedItemSchema.index({ userId: 1, startupId: 1 }, { unique: true });
 
-module.exports = mongoose.model('SavedItem', savedItemSchema);
+module.exports = require('../utils/firebaseModel').models.SavedItem;

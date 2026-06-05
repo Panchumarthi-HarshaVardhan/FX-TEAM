@@ -112,4 +112,4 @@ videoSchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.model('Video', videoSchema);
+module.exports = require('../utils/firebaseModel').models.Video;

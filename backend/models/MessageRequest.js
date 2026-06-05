@@ -25,4 +25,4 @@ const messageRequestSchema = new mongoose.Schema({
 // Prevent duplicate pending requests
 messageRequestSchema.index({ sender: 1, receiver: 1, status: 1 }, { unique: true, partialFilterExpression: { status: 'pending' } });
 
-module.exports = mongoose.model('MessageRequest', messageRequestSchema);
+module.exports = require('../utils/firebaseModel').models.MessageRequest;

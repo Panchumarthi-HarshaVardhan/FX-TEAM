@@ -61,4 +61,4 @@ notificationSchema.pre('save', function(next) {
   next();
 });
 
-module.exports = mongoose.model('Notification', notificationSchema);
+module.exports = require('../utils/firebaseModel').models.Notification;

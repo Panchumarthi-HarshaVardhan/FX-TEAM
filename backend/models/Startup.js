@@ -349,4 +349,4 @@ startupSchema.pre('save', async function(next) {
   next();
 });
 
-module.exports = mongoose.model('Startup', startupSchema);
+module.exports = require('../utils/firebaseModel').models.Startup;
