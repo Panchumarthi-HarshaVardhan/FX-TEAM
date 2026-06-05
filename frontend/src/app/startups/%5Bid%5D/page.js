@@ -506,7 +506,7 @@ function AIStartupInsights({ insights }) {
       </h2>
       
       <div className="flex items-center gap-4 mb-4">
-        <div className="h-14 w-14 rounded-full bg-gradient-to-br from-purple-500 to-indigo-650 flex items-center justify-center text-white text-xl font-bold font-sans shadow-md">
+        <div className="h-14 w-14 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white text-xl font-bold font-sans shadow-md">
           {insights.score}
         </div>
         <div>
@@ -1116,7 +1116,7 @@ function JobApplyModal({ isOpen, onClose, job, startupName, onSuccess }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 text-sm font-bold text-slate-650 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
+              className="px-4 py-2.5 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
             >
               Cancel
             </button>

@@ -28,6 +28,7 @@ async function testVideoFlow() {
       body: JSON.stringify({
         content: 'Check out this new feature! #demo #video',
         type: 'video',
+        contentType: 'video',
         mediaUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
       })
     });

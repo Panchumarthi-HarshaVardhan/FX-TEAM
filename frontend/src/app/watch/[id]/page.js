@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Navbar from '../../../components/Navbar';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Loader, ThumbsUp, MessageCircle, Share2, Bookmark, Building2, Flag, Send } from 'lucide-react';
+import { Loader, ThumbsUp, MessageCircle, Share2, Bookmark, Building2, Flag, Send, Play } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '../../../context/AuthContext';
 import FollowButton from '../../../components/FollowButton';

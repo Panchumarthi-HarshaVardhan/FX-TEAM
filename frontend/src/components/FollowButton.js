@@ -4,13 +4,13 @@ import { useState } from 'react';
 import { UserPlus, Check, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
+import { API_URL } from '@/utils/api';
 
 export default function FollowButton({ userId, initialIsFollowing = false, onToggle, className = '' }) {
   const { user, token } = useAuth();
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const API_URL = (typeof window !== 'undefined' ? process.env.NEXT_PUBLIC_API_URL : undefined) || 'http://localhost:5000';
 
   const handleFollow = async (e) => {
     e.preventDefault();

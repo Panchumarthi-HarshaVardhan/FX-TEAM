@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import Navbar from '../../../components/Navbar';
 import SendInterestRequestModal from '../../../components/SendInterestRequestModal';
 import Link from 'next/link';
+import InvestorPortal from '../../../components/dashboard/InvestorPortal';
 import { 
   TrendingUp, 
   Eye, 
@@ -26,11 +27,11 @@ import {
   BarChart2,
   Filter,
   Plus,
-  Check
+  Check,
+  Mail
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { API_URL } from '@/utils/api';
 
 // Investor Analytics Component
 function InvestorAnalytics({ analytics }) {
@@ -529,6 +530,7 @@ export default function InvestorDashboard() {
   const [selectedStartup, setSelectedStartup] = useState(null);
   const [openToInvest, setOpenToInvest] = useState(true);
   const [togglingOpen, setTogglingOpen] = useState(false);
+  const [activeMainTab, setActiveMainTab] = useState('overview'); // 'overview' or 'portal'
 
   // Sync with user's profile open_to_invest setting
   useEffect(() => {
@@ -696,7 +698,29 @@ export default function InvestorDashboard() {
           </div>
         </div>
 
-        <InvestorAnalytics analytics={data.analytics} />
+        {/* Main Tab Selector */}
+        <div className="flex border-b border-gray-200 mb-8 gap-2">
+          <button
+            onClick={() => setActiveMainTab('overview')}
+            className={`px-4 py-2 border-b-2 font-bold text-sm transition-all ${
+              activeMainTab === 'overview' ? 'border-primary text-primary font-sans' : 'border-transparent text-slate-500 hover:text-slate-700 font-sans'
+            }`}
+          >
+            Explore Startups
+          </button>
+          <button
+            onClick={() => setActiveMainTab('portal')}
+            className={`px-4 py-2 border-b-2 font-bold text-sm transition-all ${
+              activeMainTab === 'portal' ? 'border-primary text-primary font-sans' : 'border-transparent text-slate-500 hover:text-slate-700 font-sans'
+            }`}
+          >
+            Investment Portfolio Portal
+          </button>
+        </div>
+
+        {activeMainTab === 'overview' ? (
+          <>
+            <InvestorAnalytics analytics={data.analytics} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
           <div className="lg:col-span-2 space-y-6">
@@ -711,12 +735,35 @@ export default function InvestorDashboard() {
           </div>
           
           <div className="space-y-6">
+            {/* Quick Actions Card */}
+            <div className="card p-6 bg-white border border-gray-150 rounded-2xl shadow-sm">
+              <h3 className="text-sm font-black text-slate-950 flex items-center gap-2 uppercase tracking-wide mb-4">
+                <Zap className="h-5 w-5 text-yellow-500" />
+                Quick Actions
+              </h3>
+              <div className="flex flex-col gap-2.5">
+                <Link
+                  href="/inbox"
+                  className="flex items-center justify-between p-3 bg-blue-50/50 hover:bg-blue-50 border border-blue-100 rounded-xl transition text-xs font-bold text-blue-700"
+                >
+                  <span className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Open Mailbox
+                  </span>
+                  <ArrowUpRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
             <AIInvestmentAssistant recommendations={data.aiRecommendations} />
             <PitchFeed pitches={data.pitchFeed} />
             <TrendingInsights insights={data.trendingInsights} />
             <InvestorActivityFeed activity={data.activityFeed} />
           </div>
         </div>
+          </>
+        ) : (
+          <InvestorPortal />
+        )}
       </main>
 
       {/* Send Interest Request Modal */}

@@ -1,13 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { Plus, Bell, MessageCircle, Menu, User, Search, LogIn, LogOut, Settings, ChevronDown, ShoppingBag, ShoppingCart, Heart, FileText, Film, Sun, Moon } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Plus, Bell, MessageCircle, Menu, User, Search, LogIn, LogOut, Settings, ChevronDown, ShoppingBag, ShoppingCart, Heart, FileText, Film, Sun, Moon, Mail } from 'lucide-react';
+
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { useTheme } from '../context/ThemeContext';
 import ConfirmationModal from './ConfirmationModal';
 import dynamic from 'next/dynamic';
+import { API_URL } from '@/utils/api';
 
 const GlobalSearch = dynamic(() => import('./GlobalSearch'), { ssr: false });
 
@@ -24,6 +27,69 @@ export default function Navbar({ dark = false }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [watchlistCount, setWatchlistCount] = useState(0);
   const [messageUnreadCount, setMessageUnreadCount] = useState(0);
+  const [mailUnreadCount, setMailUnreadCount] = useState(0);
+  const pathname = usePathname();
+
+  const isActive = (path) => {
+    if (!pathname) return false;
+    if (path === '/') return pathname === '/';
+    if (path === '/profile') {
+      return pathname.startsWith('/profile') || pathname.startsWith('/u/') || pathname.startsWith('/f/');
+    }
+    if (path === '/messages') {
+      return pathname.startsWith('/messages') || pathname.startsWith('/chat');
+    }
+    return pathname.startsWith(path);
+  };
+
+  const getLinkClass = (path) => {
+    const active = isActive(path);
+    if (isDark) {
+      return `flex-shrink-0 px-3 py-2 rounded-md text-sm font-medium transition ${
+        active ? 'bg-white/10 text-white font-semibold' : 'text-gray-300 hover:text-white hover:bg-white/5'
+      }`;
+    } else {
+      return `flex-shrink-0 px-3 py-2 rounded-md text-sm font-medium transition ${
+        active ? 'bg-blue-50 text-primary font-semibold' : 'text-slate-700 hover:text-primary hover:bg-gray-50'
+      }`;
+    }
+  };
+
+  const getMobileLinkClass = (path) => {
+    const active = isActive(path);
+    if (isDark) {
+      return `block px-3 py-2 rounded-md text-base font-medium transition ${
+        active ? 'bg-white/10 text-white font-bold' : 'text-gray-300 hover:text-white hover:bg-white/5'
+      }`;
+    } else {
+      return `block px-3 py-2 rounded-md text-base font-medium transition ${
+        active ? 'bg-blue-50 text-primary font-bold' : 'text-slate-700 hover:text-primary hover:bg-gray-50'
+      }`;
+    }
+  };
+
+  const getIconClass = (path) => {
+    const active = isActive(path);
+    if (isDark) {
+      return `transition relative ${active ? 'text-white' : 'text-gray-400 hover:text-white'}`;
+    } else {
+      return `transition relative ${active ? 'text-primary' : 'text-gray-400 hover:text-primary'}`;
+    }
+  };
+
+  const getAvatarWrapperClass = () => {
+    const active = isActive('/profile');
+    if (isDark) {
+      return `h-8 w-8 rounded-full flex items-center justify-center overflow-hidden border transition-all ${
+        active ? 'border-white ring-2 ring-white/20' : 'bg-[#111827] border-[rgba(255,255,255,0.08)] text-gray-100'
+      }`;
+    } else {
+      return `h-8 w-8 rounded-full flex items-center justify-center overflow-hidden border transition-all ${
+        active ? 'border-primary ring-2 ring-primary/20' : 'bg-section text-primary border-gray-200'
+      }`;
+    }
+  };
+
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -52,10 +118,54 @@ export default function Navbar({ dark = false }) {
     setIsLogoutModalOpen(false);
   };
 
+  const fetchMailUnreadCount = () => {
+    if (!user || !token) return;
+    fetch(`${API_URL}/api/mail/inbox`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data?.success && Array.isArray(data.data)) {
+          const unreadMails = data.data.filter(m => !m.isRead).length;
+          setMailUnreadCount(unreadMails);
+        }
+      })
+      .catch(err => console.error('Mail count fetch error:', err));
+  };
+
+  const fetchConversationsForBadge = async () => {
+    if (!user || !token) return;
+    fetch(`${API_URL}/api/messages/conversations`, {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => {
+        const contentType = res.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            return null;
+        }
+        return res.json();
+    })
+      .then(data => {
+        if (data?.success && Array.isArray(data.data)) {
+            let totalUnread = 0;
+            data.data.forEach(conv => {
+                if (conv.unreadCount && conv.unreadCount[user._id]) {
+                    totalUnread += conv.unreadCount[user._id];
+                }
+                if (conv.status === 'pending' && conv.lastMessage?.sender !== user._id) {
+                    totalUnread += 1;
+                }
+            });
+            setMessageUnreadCount(totalUnread);
+        }
+    })
+      .catch(err => console.error('Error fetching conversations for badge:', err));
+  };
+
+  // Fetch initial unread count and watchlist count
   useEffect(() => {
-    // Fetch initial unread count and watchlist count
     if (user && user._id && token) {
-      fetch('http://localhost:5000/api/notifications', {
+      fetch(`${API_URL}/api/notifications`, {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => {
@@ -74,8 +184,9 @@ export default function Navbar({ dark = false }) {
         })
         .catch(err => console.error('Notification fetch error:', err));
 
+      fetchMailUnreadCount();
       // Fetch watchlist count
-      fetch('http://localhost:5000/api/watchlist/count', {
+      fetch(`${API_URL}/api/watchlist/count`, {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => {
@@ -94,7 +205,7 @@ export default function Navbar({ dark = false }) {
         .catch(err => console.error('Watchlist count fetch error:', err));
         
       // Fetch conversations for unread message count
-      fetch('http://localhost:5000/api/messages/conversations', {
+      fetch(`${API_URL}/api/messages/conversations`, {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => {
@@ -123,39 +234,11 @@ export default function Navbar({ dark = false }) {
     }
   }, [user]);
 
-  const fetchConversationsForBadge = async () => {
-    if (!user || !token) return;
-    fetch('http://localhost:5000/api/messages/conversations', {
-        headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => {
-        const contentType = res.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-            return null;
-        }
-        return res.json();
-    })
-      .then(data => {
-        if (data?.success && Array.isArray(data.data)) {
-            let totalUnread = 0;
-            data.data.forEach(conv => {
-                if (conv.unreadCount && conv.unreadCount[user._id]) {
-                    totalUnread += conv.unreadCount[user._id];
-                }
-                if (conv.status === 'pending' && conv.lastMessage?.sender !== user._id) {
-                    totalUnread += 1;
-                }
-            });
-            setMessageUnreadCount(totalUnread);
-        }
-    })
-      .catch(err => console.error('Error fetching conversations for badge:', err));
-  };
-
   useEffect(() => {
     if (socket) {
       socket.on('new_notification', () => {
         setUnreadCount(prev => prev + 1);
+        fetchMailUnreadCount();
       });
       
       socket.on('new_message_request', () => {
@@ -178,12 +261,6 @@ export default function Navbar({ dark = false }) {
   const navClass = isDark 
     ? "sticky top-0 z-50 bg-[#0B0F19]/80 border-b border-[rgba(255,255,255,0.08)] backdrop-blur-md shadow-lg text-white" 
     : "sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm text-gray-800";
-  const linkClass = `flex-shrink-0 px-3 py-2 rounded-md text-sm font-medium transition ${
-    isDark ? 'text-gray-300 hover:text-white hover:bg-white/5' : 'text-body hover:text-primary hover:bg-gray-50'
-  }`;
-  const iconClass = `transition relative ${
-    isDark ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-primary'
-  }`;
   const chevronClass = `h-4 w-4 transition-transform ${
     isDark ? 'text-gray-400' : 'text-gray-500'
   } ${isDropdownOpen ? 'rotate-180' : ''}`;
@@ -202,9 +279,6 @@ export default function Navbar({ dark = false }) {
   const mobileMenuClass = `md:hidden border-t ${
     isDark ? 'bg-[#0B0F19] border-[rgba(255,255,255,0.08)] text-gray-100' : 'bg-white border-gray-100 text-gray-800'
   }`;
-  const mobileLinkClass = `block px-3 py-2 rounded-md text-base font-medium ${
-    isDark ? 'text-gray-300 hover:text-white hover:bg-white/5' : 'text-body hover:text-primary hover:bg-gray-50'
-  }`;
 
   return (
     <nav className={navClass}>
@@ -221,23 +295,23 @@ export default function Navbar({ dark = false }) {
               <GlobalSearch />
             </div>
 
-            <Link href="/" className={linkClass}>
+            <Link href="/" className={getLinkClass('/')}>
               Home
             </Link>
-            <Link href="/startups" className={linkClass}>
+            <Link href="/startups" className={getLinkClass('/startups')}>
               Startups
             </Link>
-            <Link href="/investors" className={linkClass}>
+            <Link href="/investors" className={getLinkClass('/investors')}>
               Investors
             </Link>
-            <Link href="/shop" className={`${linkClass} flex items-center gap-1`}>
+            <Link href="/shop" className={`${getLinkClass('/shop')} flex items-center gap-1`}>
               <ShoppingBag className="h-4 w-4" />
               Shop
             </Link>
-            <Link href="/foundertv" className={linkClass}>
+            <Link href="/foundertv" className={getLinkClass('/foundertv')}>
               FounderTV
             </Link>
-            <Link href="/dashboard" className={linkClass}>
+            <Link href="/dashboard" className={getLinkClass('/dashboard')}>
               Dashboard
             </Link>
           </div>
@@ -279,7 +353,7 @@ export default function Navbar({ dark = false }) {
                   )}
                 </div>
 
-                <Link href="/dashboard/investor/watchlist" className={iconClass}>
+                <Link href="/dashboard/investor/watchlist" className={getIconClass('/dashboard/investor/watchlist')}>
                   <Heart className="h-6 w-6" />
                   {watchlistCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
@@ -287,7 +361,7 @@ export default function Navbar({ dark = false }) {
                     </span>
                   )}
                 </Link>
-                <Link href="/notifications" className={iconClass}>
+                <Link href="/notifications" className={getIconClass('/notifications')}>
                   <Bell className="h-6 w-6" />
                   {unreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
@@ -295,7 +369,15 @@ export default function Navbar({ dark = false }) {
                     </span>
                   )}
                 </Link>
-                <Link href="/messages" className={iconClass}>
+                <Link href="/inbox" className={getIconClass('/inbox')} title="Mailbox">
+                  <Mail className="h-6 w-6" />
+                  {mailUnreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
+                      {mailUnreadCount}
+                    </span>
+                  )}
+                </Link>
+                <Link href="/messages" className={getIconClass('/messages')}>
                   <MessageCircle className="h-6 w-6" />
                   {messageUnreadCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-4 w-4 flex items-center justify-center">
@@ -309,7 +391,7 @@ export default function Navbar({ dark = false }) {
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     className="flex items-center space-x-1 focus:outline-none animate-none"
                   >
-                    <div className={`h-8 w-8 rounded-full flex items-center justify-center overflow-hidden border ${dark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-section text-primary border-gray-200'}`}>
+                    <div className={getAvatarWrapperClass()}>
                       {user.profileImage ? (
                         <img 
                           src={user.profileImage} 
@@ -353,7 +435,7 @@ export default function Navbar({ dark = false }) {
                       
                       <button
                         onClick={handleLogoutClick}
-                        className="block w-full text-left px-4 py-2 text-sm text-red-650 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center transition-colors font-semibold"
+                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 flex items-center transition-colors font-semibold"
                       >
                         <LogOut className="h-4 w-4 mr-3" />
                         Sign out
@@ -364,7 +446,7 @@ export default function Navbar({ dark = false }) {
               </>
             ) : (
               <>
-                <Link href="/auth/login" className={dark ? "text-zinc-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition" : "text-body hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition"}>
+                <Link href="/auth/login" className={dark ? "text-zinc-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition" : "text-slate-700 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition"}>
                   Log in
                 </Link>
                 <Link href="/auth/signup" className="flex items-center justify-center px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-primary hover:bg-blue-600 transition">
@@ -396,22 +478,22 @@ export default function Navbar({ dark = false }) {
       {isMenuOpen && (
         <div className={mobileMenuClass}>
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            <Link href="/" className={mobileLinkClass}>
+            <Link href="/" className={getMobileLinkClass('/')}>
               Home
             </Link>
-            <Link href="/startups" className={mobileLinkClass}>
+            <Link href="/startups" className={getMobileLinkClass('/startups')}>
               Startups
             </Link>
-            <Link href="/investors" className={mobileLinkClass}>
+            <Link href="/investors" className={getMobileLinkClass('/investors')}>
               Investors
             </Link>
-            <Link href="/shop" className={mobileLinkClass}>
+            <Link href="/shop" className={getMobileLinkClass('/shop')}>
               Shop
             </Link>
-            <Link href="/foundertv" className={mobileLinkClass}>
+            <Link href="/foundertv" className={getMobileLinkClass('/foundertv')}>
               FounderTV
             </Link>
-            <Link href="/dashboard" className={mobileLinkClass}>
+            <Link href="/dashboard" className={getMobileLinkClass('/dashboard')}>
               Dashboard
             </Link>
             {!loading && user ? (
@@ -435,14 +517,21 @@ export default function Navbar({ dark = false }) {
                   
                   <Link 
                     href="/profile" 
-                    className={mobileLinkClass}
+                    className={getMobileLinkClass('/profile')}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Your Profile
                   </Link>
                   <Link 
+                    href="/inbox" 
+                    className={getMobileLinkClass('/inbox')}
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Mailbox {mailUnreadCount > 0 && `(${mailUnreadCount})`}
+                  </Link>
+                  <Link 
                     href="/settings" 
-                    className={mobileLinkClass}
+                    className={getMobileLinkClass('/settings')}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     Settings
@@ -463,7 +552,7 @@ export default function Navbar({ dark = false }) {
                   </Link>
                   <button 
                     onClick={handleLogoutClick}
-                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-650 hover:bg-red-50 dark:hover:bg-red-950/20"
+                    className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
                   >
                     Sign out
                   </button>
@@ -471,7 +560,7 @@ export default function Navbar({ dark = false }) {
               </>
             ) : (
               <>
-                 <Link href="/auth/login" className={mobileLinkClass}>
+                 <Link href="/auth/login" className={getMobileLinkClass('/auth/login')}>
                   Log in
                 </Link>
                 <Link href="/auth/signup" className={`block px-3 py-2 rounded-md text-base font-medium ${dark ? 'text-blue-400 hover:bg-zinc-900' : 'text-primary hover:bg-gray-50'}`}>

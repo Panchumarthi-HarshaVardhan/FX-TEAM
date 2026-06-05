@@ -18,6 +18,7 @@ import {
   Clock,
   Eye
 } from 'lucide-react';
+import SendInterestRequestModal from '../../../components/SendInterestRequestModal';
 
 // Demo startup data
 const demoStartup = {
@@ -594,11 +595,13 @@ export default function StartupDetailPage() {
         </div>
       </main>
 
-      <InvestorInterestModal
+      <SendInterestRequestModal
         isOpen={interestModalOpen}
-        onClose={() => setInterestModalOpen(false)}
-        startupId={startup._id}
-        onInterestSent={fetchStartup}
+        onClose={(success) => {
+          setInterestModalOpen(false);
+          if (success) fetchStartup();
+        }}
+        startup={startup}
       />
 
       <RoleRequestModal

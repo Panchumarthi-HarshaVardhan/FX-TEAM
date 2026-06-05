@@ -23,9 +23,26 @@ const investmentRequestSchema = new mongoose.Schema({
   },
   message: String,
   investmentRange: String,
+  interestedAmount: {
+    type: String,
+    default: ''
+  },
+  investmentType: {
+    type: String,
+    enum: ['Equity', 'SAFE', 'Convertible Note', 'Debt', 'Other'],
+    default: 'Equity'
+  },
   requestPitchDeck: {
     type: Boolean,
     default: false
+  },
+  meetingRequest: {
+    type: Boolean,
+    default: false
+  },
+  attachmentUrl: {
+    type: String,
+    default: ''
   },
   createdAt: {
     type: Date,

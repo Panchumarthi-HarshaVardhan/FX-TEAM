@@ -140,4 +140,36 @@ router.get('/role-requests', protect, async (req, res) => {
   }
 });
 
+// @desc    Withdraw a custom role request
+// @route   PATCH /api/job-seeker/role-requests/:id/withdraw
+// @access  Private
+router.patch('/role-requests/:id/withdraw', protect, async (req, res) => {
+  try {
+    const request = await StartupRoleRequest.findById(req.params.id);
+    if (!request) {
+      return res.status(404).json({ success: false, error: 'Request not found' });
+    }
+
+    if (request.applicantId.toString() !== req.user.id) {
+      return res.status(401).json({ success: false, error: 'Not authorized to withdraw this request' });
+    }
+
+    if (!['pending', 'reviewed', 'connected'].includes(request.status)) {
+      return res.status(400).json({ success: false, error: 'Cannot withdraw request at this stage' });
+    }
+
+    request.status = 'withdrawn';
+    await request.save();
+
+    res.status(200).json({
+      success: true,
+      data: request,
+      message: 'Request withdrawn successfully'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: 'Server Error' });
+  }
+});
+
 module.exports = router;

@@ -4,7 +4,10 @@ const JobOpening = require('../models/JobOpening');
 const JobApplication = require('../models/JobApplication');
 const Startup = require('../models/Startup');
 const Notification = require('../models/Notification');
+const Mail = require('../models/Mail');
+const User = require('../models/User');
 const { protect } = require('../middleware/auth');
+
 
 // @desc    Apply for a job
 // @route   POST /api/jobs/:id/apply
@@ -106,6 +109,34 @@ router.post('/:id/apply', protect, async (req, res) => {
       });
     } catch (err) {
       console.error('Error creating notification:', err);
+    }
+
+    // Create Mail item
+    try {
+      const senderUser = await User.findById(req.user.id);
+      const receiverUser = await User.findById(job.founderId);
+      const startup = await Startup.findById(job.startupId);
+      const mailSubject = `Job Application: ${job.title} at ${startup ? startup.name : 'Startup'}`;
+      const mailBody = coverLetter || message || `Hi, I am interested in the ${job.title} role. Please review my profile and application.\n\nResume: ${resume || resumeUrl || 'Attached'}`;
+
+      await Mail.create({
+        senderId: req.user.id,
+        receiverId: job.founderId,
+        senderProfileName: senderUser?.fullName || senderUser?.name || '',
+        receiverProfileName: receiverUser?.fullName || receiverUser?.name || '',
+        senderRole: senderUser?.role || '',
+        receiverRole: receiverUser?.role || '',
+        subject: mailSubject,
+        body: mailBody,
+        type: 'application_request',
+        status: 'pending',
+        actionStatus: 'pending',
+        relatedStartupId: job.startupId,
+        relatedApplicationId: application._id,
+        isRead: false
+      });
+    } catch (mailErr) {
+      console.error('Failed to create Mail item for job application:', mailErr);
     }
 
     res.status(201).json({

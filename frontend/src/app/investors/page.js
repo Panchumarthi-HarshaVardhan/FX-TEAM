@@ -24,8 +24,7 @@ import {
   Zap,
   Loader
 } from 'lucide-react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { API_URL } from '@/utils/api';
 
 const industries = ['All', 'AI', 'SaaS', 'FinTech', 'HealthTech', 'EdTech', 'E-commerce'];
 const stages = ['All', 'Idea', 'MVP', 'Pre-seed', 'Seed', 'Series A'];
@@ -338,7 +337,7 @@ function PitchSubmissionModal({ isOpen, onClose, investor }) {
     const fetchMyStartups = async () => {
       try {
         if (!token) return;
-        const res = await fetch('http://localhost:5000/api/startups', {
+        const res = await fetch(`${API_URL}/api/startups`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const json = await res.json();
@@ -367,7 +366,7 @@ function PitchSubmissionModal({ isOpen, onClose, investor }) {
     }
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:5000/api/investor/interest-request', {
+      const res = await fetch(`${API_URL}/api/investor/interest-request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

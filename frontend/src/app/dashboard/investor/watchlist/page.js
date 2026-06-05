@@ -8,8 +8,7 @@ import Navbar from '../../../../components/Navbar';
 import Link from 'next/link';
 import { TrendingUp, Eye, Heart, ArrowLeft, Search, Filter, Check, Plus } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { API_URL } from '@/utils/api';
 
 export default function WatchlistPage() {
   const { user, loading, token } = useAuth();

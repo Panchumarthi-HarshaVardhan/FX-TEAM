@@ -32,6 +32,7 @@ async function testVideoFlow() {
       body: JSON.stringify({
         content: 'Check out our new product demo video! #startup #demo',
         type: 'video',
+        contentType: 'video',
         mediaUrl: videoUrl
       })
     });

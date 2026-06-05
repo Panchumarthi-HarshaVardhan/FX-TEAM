@@ -6,9 +6,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import FollowButton from './FollowButton';
+import { API_URL } from '@/utils/api';
 
 export default function GlobalSearch() {
   const { user: currentUser } = useAuth();
+
   const [query, setQuery] = useState('');
   const [results, setResults] = useState({ users: [], startups: [], posts: [] });
   const [loading, setLoading] = useState(false);
@@ -37,7 +39,7 @@ export default function GlobalSearch() {
       if (query.trim().length >= 2) {
         setLoading(true);
         try {
-          const res = await fetch(`http://localhost:5000/api/search?q=${encodeURIComponent(query)}`);
+          const res = await fetch(`${API_URL}/api/search?q=${encodeURIComponent(query)}`);
           const data = await res.json();
           if (data.success && data.data) {
             setResults({
@@ -227,7 +229,7 @@ export default function GlobalSearch() {
             </div>
           ) : (
             <div className="px-6 py-8 text-center text-gray-500">
-              <p className="text-sm font-medium">No results found for "{query}"</p>
+              <p className="text-sm font-medium">No results found for &quot;{query}&quot;</p>
             </div>
           )}
         </div>

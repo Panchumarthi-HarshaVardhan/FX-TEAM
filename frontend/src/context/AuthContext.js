@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from './ToastContext';
+import { API_URL } from '@/utils/api';
 
 const AuthContext = createContext();
 
@@ -28,7 +29,7 @@ export const AuthProvider = ({ children }) => {
   const router = useRouter();
   const { addToast } = useToast();
   const hasCheckedRef = useRef(false);
-  const API_URL = (typeof window !== 'undefined' ? process.env.NEXT_PUBLIC_API_URL : undefined) || 'http://localhost:5000';
+
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

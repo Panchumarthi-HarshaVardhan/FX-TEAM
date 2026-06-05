@@ -8,8 +8,9 @@ const mongoose = require('mongoose');
 const FounderProfile = require('../models/FounderProfile');
 const Follow = require('../models/Follow');
 const SavedItem = require('../models/SavedItem');
-const StartupTeamMember = require('../models/StartupTeamMember');
 const StartupRoleRequest = require('../models/StartupRoleRequest');
+const Mail = require('../models/Mail');
+
 
 
 // @desc    Get Startup Badge (SVG) and Track View
@@ -1193,6 +1194,33 @@ exports.createStartupRoleRequest = async (req, res) => {
       entityType: 'StartupRoleRequest',
       content: `${req.user.fullName || req.user.name} sent a startup role request (${requestType}: ${roleTitle}) to join ${startup.name}`
     }, req.app.get('io'));
+
+    // Create Mail item
+    try {
+      const senderUser = await User.findById(req.user.id);
+      const receiverUser = await User.findById(startup.founderId);
+      const mailSubject = `Startup Role Request: ${roleTitle} (${requestType}) at ${startup.name}`;
+      const mailBody = message || `Hi, I am interested in joining ${startup.name} as a ${roleTitle} (${requestType}). Please review my profile and skills.\n\nSkills: ${Array.isArray(skills) ? skills.join(', ') : (skills || 'N/A')}`;
+
+      await Mail.create({
+        senderId: req.user.id,
+        receiverId: startup.founderId,
+        senderProfileName: senderUser?.fullName || senderUser?.name || '',
+        receiverProfileName: receiverUser?.fullName || receiverUser?.name || '',
+        senderRole: senderUser?.role || '',
+        receiverRole: receiverUser?.role || '',
+        subject: mailSubject,
+        body: mailBody,
+        type: 'cofounder_request',
+        status: 'pending',
+        actionStatus: 'pending',
+        relatedStartupId: startup._id,
+        relatedApplicationId: request._id,
+        isRead: false
+      });
+    } catch (mailErr) {
+      console.error('Failed to create Mail item for startup role request:', mailErr);
+    }
 
     res.status(201).json({
       success: true,

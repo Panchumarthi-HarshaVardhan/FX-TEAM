@@ -27,6 +27,8 @@ const uploadRoutes = require('./routes/upload');
 const assistantRoutes = require('./routes/assistant');
 const teamInvitationRoutes = require('./routes/teamInvitations');
 const adminRoutes = require('./routes/admin');
+const mailRoutes = require('./routes/mail');
+
 
 // Import Models for Socket Logic
 const User = require('./models/User');
@@ -35,8 +37,34 @@ const Message = require('./models/Message');
 const app = express();
 const server = http.createServer(app);
 
+const isLocalOrigin = (origin) => {
+  if (!origin) return true;
+  try {
+    const url = new URL(origin);
+    const hostname = url.hostname;
+    return (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1' ||
+      hostname.endsWith('.local') ||
+      hostname.endsWith('.lan') ||
+      hostname.startsWith('192.168.') ||
+      hostname.startsWith('10.') ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname)
+    );
+  } catch (err) {
+    return false;
+  }
+};
+
 const corsOptions = {
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001'],
+  origin: function (origin, callback) {
+    if (!origin || isLocalOrigin(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -44,7 +72,13 @@ const corsOptions = {
 
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:3000', 'http://localhost:3001'],
+    origin: function (origin, callback) {
+      if (!origin || isLocalOrigin(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE']
   }
 });
@@ -202,6 +236,8 @@ app.use('/api/products', productRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/mail', mailRoutes);
+
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/questions', questionRoutes);

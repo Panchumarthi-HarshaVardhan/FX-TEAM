@@ -476,7 +476,7 @@ function ProductDetailModal({ product, isOpen, onClose }) {
                   </div>
                 </div>
                 <p className="text-muted text-sm">
-                  {product.founder} built this product to help founders like you. They're active in the FounderX community and ready to help!
+                  {product.founder} built this product to help founders like you. They&apos;re active in the FounderX community and ready to help!
                 </p>
               </div>
 

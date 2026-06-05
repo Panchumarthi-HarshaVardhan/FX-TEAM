@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Navbar from '../Navbar';
+import SendInterestRequestModal from '../SendInterestRequestModal';
 import ShareButton from '../ShareButton';
 import Link from 'next/link';
 import { MapPin, Calendar, Globe, ShieldCheck, Users, TrendingUp, DollarSign, MessageCircle } from 'lucide-react';
@@ -18,6 +20,7 @@ export default function PublicStartupView({ startup }) {
   const [isFollowing, setIsFollowing] = useState(
     user && startup.saves ? startup.saves.some(s => s.userId === user._id || s.userId?._id === user._id) : false
   );
+  const [interestModalOpen, setInterestModalOpen] = useState(false);
 
   const handleMessage = () => {
     if (!user) {
@@ -121,6 +124,14 @@ export default function PublicStartupView({ startup }) {
                 >
                   {isFollowing ? 'Following' : 'Follow'}
                 </button>
+                {user && user.role === 'investor' && (
+                  <button 
+                    onClick={() => setInterestModalOpen(true)}
+                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-center font-bold rounded-lg transition shadow-sm text-xs uppercase cursor-pointer"
+                  >
+                    Send Interest
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -242,6 +253,11 @@ export default function PublicStartupView({ startup }) {
           </Link>
         </div>
       </div>
+      <SendInterestRequestModal
+        isOpen={interestModalOpen}
+        onClose={() => setInterestModalOpen(false)}
+        startup={startup}
+      />
     </div>
   );
 }

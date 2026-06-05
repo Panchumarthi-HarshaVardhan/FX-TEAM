@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '../../../context/ToastContext';
+import { API_URL } from '@/utils/api';
 
 // Inline SVG components to replace missing lucide-react brand icons
 const Linkedin = ({ className }) => (
@@ -87,8 +88,6 @@ export default function JobSeekerDashboard() {
   const [loadingNotifications, setLoadingNotifications] = useState(true);
   const [roleRequests, setRoleRequests] = useState([]);
   const [loadingRoleReqs, setLoadingRoleReqs] = useState(true);
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
   // Role and setup complete protection check
   useEffect(() => {
@@ -574,7 +573,7 @@ export default function JobSeekerDashboard() {
                   <div className="flex justify-center p-8"><Loader className="h-6 w-6 animate-spin text-primary" /></div>
                 ) : myTeams.length === 0 ? (
                   <div className="p-10 bg-white rounded-3xl border border-slate-200 text-center text-slate-500">
-                    <p className="font-semibold">You haven't joined any startup team yet.</p>
+                    <p className="font-semibold">You haven&apos;t joined any startup team yet.</p>
                     <p className="text-xs mt-1">Once a founder accepts your application and hires you, the team details will show here.</p>
                   </div>
                 ) : (

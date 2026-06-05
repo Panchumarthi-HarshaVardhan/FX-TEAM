@@ -19,8 +19,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import SendInterestRequestModal from '../../components/SendInterestRequestModal';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+import { API_URL } from '@/utils/api';
 
 // Helper function to get safe image src
 const getSafeImageSrc = (src) => {
@@ -79,7 +78,7 @@ function StartupCard({ startup, onFollow, onSave, onViewJobs, onShowInterest, on
               ★
             </button>
           )}
-          <span className="px-2.5 py-1 bg-white/80 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider text-slate-650 rounded-lg shadow-sm">
+          <span className="px-2.5 py-1 bg-white/80 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider text-slate-600 rounded-lg shadow-sm">
             {startup.stage}
           </span>
         </div>
@@ -146,10 +145,10 @@ function StartupCard({ startup, onFollow, onSave, onViewJobs, onShowInterest, on
               <button 
                 onClick={handleFollowClick}
                 disabled={loadingAction === 'follow'}
-                className={`flex-1 font-bold text-xs rounded-xl transition ${
+                className={`flex-1 font-bold text-xs rounded-xl transition border ${
                   isFollowing
-                    ? 'bg-slate-250 text-slate-700 hover:bg-slate-350'
-                    : 'bg-indigo-650 hover:bg-indigo-705 text-white shadow-sm'
+                    ? 'bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-300'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 shadow-sm'
                 }`}
               >
                 {loadingAction === 'follow' ? '...' : (isFollowing ? 'Unfollow' : 'Follow')}
@@ -227,7 +226,7 @@ function StartupSection({ title, icon: Icon, startups, onFollow, onSave, onViewJ
   return (
     <section className="mb-12">
       <div className="flex items-center gap-2 mb-6">
-        {Icon && <Icon className="h-6 w-6 text-indigo-650" />}
+        {Icon && <Icon className="h-6 w-6 text-indigo-600" />}
         <h2 className="text-xl font-black text-slate-950 uppercase tracking-wide">{title}</h2>
       </div>
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -311,7 +310,7 @@ export default function StartupsPage() {
 
   const fetchAppliedJobs = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/job-seeker/applications', {
+      const res = await fetch(`${API_URL}/api/job-seeker/applications`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const json = await res.json();
@@ -576,7 +575,7 @@ export default function StartupsPage() {
               </div>
               <button 
                 onClick={() => setJobsModalOpen(false)} 
-                className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-slate-650 transition"
+                className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-slate-600 transition"
               >
                 ✕
               </button>
@@ -591,7 +590,7 @@ export default function StartupsPage() {
                       <div className="flex justify-between items-start gap-2">
                         <div>
                           <h4 className="font-extrabold text-slate-900 text-sm leading-snug">{job.title}</h4>
-                          <p className="text-[10px] font-bold text-indigo-650 uppercase tracking-wider mt-0.5">{job.roleType || job.type} • {job.location || 'Remote'}</p>
+                          <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider mt-0.5">{job.roleType || job.type} • {job.location || 'Remote'}</p>
                         </div>
                         {job.salary && (
                           <span className="text-xs font-black text-slate-900 bg-white border border-slate-200 px-2 py-0.5 rounded-lg shadow-sm">
@@ -607,7 +606,7 @@ export default function StartupsPage() {
                       {job.skills && job.skills.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {job.skills.map((skill, index) => (
-                            <span key={index} className="px-2 py-0.5 bg-white border border-slate-150 text-slate-650 font-bold text-[9px] rounded-lg">
+                            <span key={index} className="px-2 py-0.5 bg-white border border-slate-150 text-slate-600 font-bold text-[9px] rounded-lg">
                               {skill}
                             </span>
                           ))}
@@ -624,7 +623,7 @@ export default function StartupsPage() {
                         ) : (
                           <button
                             onClick={() => handleApplyClick(job)}
-                            className="px-4 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm transition"
+                            className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm transition"
                           >
                             Apply Now
                           </button>

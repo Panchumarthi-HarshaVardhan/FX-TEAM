@@ -69,7 +69,7 @@ export default function QAList({ targetId, targetType }) {
           {/* Question Body */}
           <div className="p-5">
             <p className="text-lg text-gray-900 font-medium mb-4">
-              "{q.content}"
+              &quot;{q.content}&quot;
             </p>
 
             {/* Answer */}

@@ -7,8 +7,16 @@ const JobSeekerProfile = require('./JobSeekerProfile');
 const FounderProfile = require('./FounderProfile');
 const InvestorProfile = require('./InvestorProfile');
 const StartupRoleRequest = require('./StartupRoleRequest');
+const InvestmentRequest = require('./InvestmentRequest');
+const InvestorStartupConnection = require('./InvestorStartupConnection');
+const StartupUpdate = require('./StartupUpdate');
+const Mail = require('./Mail');
+const Conversation = require('./Conversation');
+const JobApplication = require('./JobApplication');
+const StartupTeamMember = require('./StartupTeamMember');
 
 module.exports = {
+  Mail,
   User,
   Startup,
   Post,
@@ -17,5 +25,11 @@ module.exports = {
   JobSeekerProfile,
   FounderProfile,
   InvestorProfile,
-  StartupRoleRequest
+  StartupRoleRequest,
+  InvestmentRequest,
+  InvestorStartupConnection,
+  StartupUpdate,
+  Conversation,
+  JobApplication,
+  StartupTeamMember
 };

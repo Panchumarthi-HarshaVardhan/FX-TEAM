@@ -31,6 +31,7 @@ import {
 import Navbar from '../../../components/Navbar';
 import { useAuth } from '../../../context/AuthContext';
 import { useToast } from '../../../context/ToastContext';
+import { API_URL } from '@/utils/api';
 
 function formatViews(num) {
   if (!num) return '0';
@@ -93,8 +94,6 @@ export default function VideoDetailPage() {
   const [interestMessage, setInterestMessage] = useState('');
   const [submittingInterest, setSubmittingInterest] = useState(false);
   const [hasExpressedInterest, setHasExpressedInterest] = useState(false);
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
   const fetchVideoData = async () => {
     try {
@@ -622,7 +621,7 @@ export default function VideoDetailPage() {
                     className="w-full py-3 bg-gradient-to-r from-[#2563EB] to-[#9333EA] text-white font-bold text-xs rounded-xl shadow-lg transition transform hover:scale-[1.03] active:scale-[0.97] flex items-center justify-center gap-2"
                   >
                     <Briefcase className="w-4 h-4" />
-                    I'm Interested in Startup
+                    I&apos;m Interested in Startup
                   </button>
                 )}
               </div>
@@ -878,7 +877,7 @@ export default function VideoDetailPage() {
                   </div>
 
                   <p className="text-[12px] leading-relaxed text-[#475569] italic">
-                    "{startup.oneLinePitch}"
+                    &quot;{startup.oneLinePitch}&quot;
                   </p>
 
                   <div className="p-3 bg-slate-50 rounded-xl border border-[#E5E7EB]">

@@ -20,6 +20,7 @@ import {
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { API_URL } from '@/utils/api';
 
 export default function UploadPage() {
   const { user, token, loading: authLoading } = useAuth();
@@ -44,7 +45,6 @@ export default function UploadPage() {
   const videoInputRef = useRef(null);
   const thumbnailInputRef = useRef(null);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     if (!authLoading && !user) {

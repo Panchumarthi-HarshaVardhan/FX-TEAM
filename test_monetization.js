@@ -31,7 +31,7 @@ async function testMonetizationFlow() {
         oneLinePitch: 'We sell things',
         description: 'E-commerce startup test',
         industry: 'E-commerce',
-        stage: 'scaling',
+        stage: 'revenue',
         fundingRequired: 50000,
         contactEmail: 'shop@startup.com'
       })

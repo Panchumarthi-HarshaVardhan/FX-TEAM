@@ -1970,7 +1970,16 @@ function DonutChartSVG({ data }) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  let currentOffset = 0;
+  // Pre-calculate segments offsets using .reduce() to prevent reassigning variables in rendering map
+  const offsets = data.reduce((acc, item, i) => {
+    if (i === 0) {
+      acc.push(0);
+    } else {
+      const prevPercentage = data[i - 1].value / total;
+      acc.push(acc[i - 1] + prevPercentage * circumference);
+    }
+    return acc;
+  }, []);
 
   return (
     <div className="flex flex-col md:flex-row items-center justify-around gap-6 pt-2">
@@ -1988,8 +1997,7 @@ function DonutChartSVG({ data }) {
           {data.map((item, i) => {
             const percentage = item.value / total;
             const strokeDashoffset = circumference - percentage * circumference;
-            const offset = currentOffset;
-            currentOffset += percentage * circumference;
+            const offset = offsets[i];
 
             return (
               <circle

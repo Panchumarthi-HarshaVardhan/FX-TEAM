@@ -16,6 +16,10 @@ export default function EditProfilePage() {
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(null); // 'avatar' or 'cover' or null
 
+  // Image Upload Handlers
+  const avatarInputRef = useRef(null);
+  const coverInputRef = useRef(null);
+
   // Form State
   const [formData, setFormData] = useState({
     name: '',
@@ -181,8 +185,6 @@ export default function EditProfilePage() {
   };
 
   // Image Upload Handlers
-  const avatarInputRef = useRef(null);
-  const coverInputRef = useRef(null);
 
   const handleImageUpload = async (file, type) => {
     if (!file) return;

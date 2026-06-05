@@ -34,14 +34,17 @@ import {
   UserPlus,
   Loader,
   FileText,
-  ExternalLink
+  ExternalLink,
+  Mail
 } from 'lucide-react';
 import FounderScoreCard from '../../../components/score/FounderScoreCard';
 import BadgeGenerator from '../../../components/startup/BadgeGenerator';
 import VerificationModal from '../../../components/VerificationModal';
+import FounderPortal from '../../../components/dashboard/FounderPortal';
 import { uploadToCloudinary } from '../../../utils/cloudinary';
 import { useToast } from '../../../context/ToastContext';
 import { format } from 'date-fns';
+import { API_URL } from '@/utils/api';
 
 // Demo data for founder dashboard
 const demoData = {
@@ -140,6 +143,7 @@ export default function FounderDashboard() {
   const { addToast } = useToast();
   
   const [mounted, setMounted] = useState(false);
+  const [activeMainTab, setActiveMainTab] = useState('overview'); // 'overview' or 'portal'
   
   useEffect(() => {
     setMounted(true);
@@ -210,8 +214,6 @@ export default function FounderDashboard() {
     notes: ''
   });
   const [hiring, setHiring] = useState(false);
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
   const fetchDashboardData = async () => {
     try {
@@ -690,7 +692,29 @@ export default function FounderDashboard() {
           </Link>
         </div>
 
-        {/* Top analytics grid */}
+        {/* Main Tab Selector */}
+        <div className="flex border-b border-gray-200 mb-8 gap-2">
+          <button
+            onClick={() => setActiveMainTab('overview')}
+            className={`px-4 py-2 border-b-2 font-bold text-sm transition-all ${
+              activeMainTab === 'overview' ? 'border-primary text-primary font-sans' : 'border-transparent text-slate-500 hover:text-slate-700 font-sans'
+            }`}
+          >
+            Overview Dashboard
+          </button>
+          <button
+            onClick={() => setActiveMainTab('portal')}
+            className={`px-4 py-2 border-b-2 font-bold text-sm transition-all ${
+              activeMainTab === 'portal' ? 'border-primary text-primary font-sans' : 'border-transparent text-slate-500 hover:text-slate-700 font-sans'
+            }`}
+          >
+            Startup Management Portal
+          </button>
+        </div>
+
+        {activeMainTab === 'overview' ? (
+          <>
+            {/* Top analytics grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
           <div className="lg:col-span-2 space-y-6">
              {/* Analytics Cards */}
@@ -733,7 +757,26 @@ export default function FounderDashboard() {
           </div>
           
           <div className="space-y-6">
-             <FounderJourney />
+            {/* Quick Actions Card */}
+            <div className="card p-6 bg-white border border-gray-150 rounded-2xl shadow-sm">
+              <h3 className="text-sm font-black text-slate-950 flex items-center gap-2 uppercase tracking-wide mb-4">
+                <Zap className="h-5 w-5 text-yellow-500" />
+                Quick Actions
+              </h3>
+              <div className="flex flex-col gap-2.5">
+                <Link
+                  href="/inbox"
+                  className="flex items-center justify-between p-3 bg-blue-50/50 hover:bg-blue-50 border border-blue-100 rounded-xl transition text-xs font-bold text-blue-700"
+                >
+                  <span className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Open Mailbox
+                  </span>
+                  <ArrowUpRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+            <FounderJourney />
           </div>
         </div>
 
@@ -854,7 +897,7 @@ export default function FounderDashboard() {
                       </p>
                       {app.coverLetter && (
                         <p className="text-xs text-slate-500 leading-relaxed max-w-xl italic mt-2">
-                          "{app.coverLetter}"
+                          &quot;{app.coverLetter}&quot;
                         </p>
                       )}
                     </div>
@@ -1064,14 +1107,14 @@ export default function FounderDashboard() {
                     {req.message && (
                       <div className="bg-white p-3 rounded-xl border border-slate-150 text-xs">
                         <p className="font-bold text-slate-750 mb-0.5">Cover Letter / Message:</p>
-                        <p className="text-slate-600 italic">"{req.message}"</p>
+                        <p className="text-slate-600 italic">&quot;{req.message}&quot;</p>
                       </div>
                     )}
 
                     {req.reasonToJoin && (
                       <div className="bg-blue-50/40 p-3 rounded-xl border border-blue-100/50 text-xs">
                         <p className="font-bold text-blue-800 mb-0.5">Why join this startup?</p>
-                        <p className="text-slate-600">"{req.reasonToJoin}"</p>
+                        <p className="text-slate-600">&quot;{req.reasonToJoin}&quot;</p>
                       </div>
                     )}
                   </div>
@@ -1120,7 +1163,7 @@ export default function FounderDashboard() {
                 <div className="flex justify-center p-8"><Loader className="h-6 w-6 animate-spin text-primary" /></div>
               ) : jobs.length === 0 ? (
                 <div className="p-8 text-center text-gray-400 text-sm">
-                  No active job openings. Click 'Post Job Opening' to create one.
+                  No active job openings. Click &apos;Post Job Opening&apos; to create one.
                 </div>
               ) : (
                 <div className="grid md:grid-cols-2 gap-4">
@@ -1263,6 +1306,10 @@ export default function FounderDashboard() {
             ))}
           </div>
         </div>
+          </>
+        ) : (
+          <FounderPortal />
+        )}
       </main>
 
       {/* Post Job Opening Modal */}
@@ -1793,7 +1840,7 @@ function AIInsightPanel() {
         <h3 className="text-sm font-black text-slate-950 uppercase tracking-wide">AI Recommendation</h3>
       </div>
       <p className="text-xs text-slate-655 font-bold leading-relaxed font-sans italic">
-        "{aiInsights[currentInsight]}"
+        &quot;{aiInsights[currentInsight]}&quot;
       </p>
     </div>
   );

@@ -29,7 +29,7 @@ export default function MessageRequest({ conversation, currentUser, onAccept, on
 
         {/* Message Preview */}
         <div className="w-full bg-gray-50 rounded-xl p-4 mb-6 text-left">
-            <p className="text-sm text-gray-600 italic">"{conversation.lastMessage?.content}"</p>
+            <p className="text-sm text-gray-600 italic">&quot;{conversation.lastMessage?.content}&quot;</p>
         </div>
 
         <div className="flex flex-col w-full gap-3">
@@ -53,7 +53,7 @@ export default function MessageRequest({ conversation, currentUser, onAccept, on
         <div className="mt-6 flex items-start gap-2 text-xs text-gray-400 text-left bg-gray-50 p-3 rounded-lg">
             <ShieldAlert className="h-4 w-4 flex-shrink-0 mt-0.5" />
             <p>
-                If you accept, you can chat instantly. If you decline, this person won't be able to message you again unless you message them first.
+                If you accept, you can chat instantly. If you decline, this person won&apos;t be able to message you again unless you message them first.
             </p>
         </div>
       </div>

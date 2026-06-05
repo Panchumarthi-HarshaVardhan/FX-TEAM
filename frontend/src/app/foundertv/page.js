@@ -26,6 +26,7 @@ import { useRouter } from 'next/navigation';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
+import { API_URL } from '@/utils/api';
 
 function formatViews(num) {
   if (!num) return '0';
@@ -61,8 +62,6 @@ export default function FounderTVPage() {
   const [videos, setVideos] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
   const fetchVideosAndStats = async () => {
     try {
@@ -301,7 +300,7 @@ export default function FounderTVPage() {
             <div>
               <h2 className="text-2xl font-black text-[#0F172A]">No Pitches Published</h2>
               <p className="text-[#64748B] text-sm mt-2 max-w-sm mx-auto">
-                Be the pioneering founder to launch your startup's pitch video to world-class investors!
+                Be the pioneering founder to launch your startup&apos;s pitch video to world-class investors!
               </p>
             </div>
             <button

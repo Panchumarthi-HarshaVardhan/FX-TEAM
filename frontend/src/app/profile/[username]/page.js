@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import PublicProfileView from '../../../components/profile/PublicProfileView';
+import ProfilePageClient from './ProfilePageClient';
 
 async function getUser(username) {
   try {
@@ -58,5 +58,5 @@ export default async function Page({ params }) {
     notFound();
   }
 
-  return <PublicProfileView user={user} />;
+  return <ProfilePageClient username={username} />;
 }
