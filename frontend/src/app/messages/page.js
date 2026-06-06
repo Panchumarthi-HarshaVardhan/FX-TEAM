@@ -8,6 +8,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import { Loader, User, MessageSquare } from 'lucide-react';
 import ChatList from '../../components/messages/ChatList';
+import ScheduleMeetingModal from '../../components/messages/ScheduleMeetingModal';
+import { API_URL } from '@/utils/api';
 import dynamic from 'next/dynamic';
 
 const ChatWindow = dynamic(() => import('../../components/messages/ChatWindow'), { 
@@ -28,6 +30,10 @@ function MessagesPageContent() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   
+  const [meetings, setMeetings] = useState([]);
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+  const [meetingModalParticipant, setMeetingModalParticipant] = useState(null);
+
   const targetUserId = searchParams.get('userId');
 
   // Redirect if not authenticated
@@ -41,10 +47,12 @@ function MessagesPageContent() {
   useEffect(() => {
     if (user && token) {
         fetchConversations();
+        fetchMeetings();
     } else {
         setConversations([]);
         setActiveConversation(null);
         setMessages([]);
+        setMeetings([]);
     }
   }, [user, token]);
 
@@ -377,6 +385,24 @@ function MessagesPageContent() {
     }
   };
 
+  const fetchMeetings = async () => {
+    try {
+      if (!token) return;
+      const res = await fetch(`${API_URL}/api/meetings`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await res.json();
+        if (data.success) {
+          setMeetings(data.data);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const fetchMessages = async (convId) => {
     setLoadingMessages(true);
     try {
@@ -549,6 +575,11 @@ function MessagesPageContent() {
             activeConversation={activeConversation} 
             setActiveConversation={setActiveConversation} 
             currentUser={user}
+            meetings={meetings}
+            onOpenScheduleModal={(participant = null) => {
+              setMeetingModalParticipant(participant);
+              setIsMeetingModalOpen(true);
+            }}
         />
 
         {/* Right Panel: Chat Window */}
@@ -557,6 +588,7 @@ function MessagesPageContent() {
                 conversation={activeConversation}
                 currentUser={user}
                 messages={messages}
+                meetings={meetings}
                 onSendMessage={handleSendMessage}
                 onEditMessage={handleEditMessage}
                 onDeleteMessage={handleDeleteMessage}
@@ -566,6 +598,10 @@ function MessagesPageContent() {
                 loadingMessages={loadingMessages}
                 onTyping={handleTyping}
                 isOtherTyping={isOtherTyping}
+                onOpenScheduleModal={(participant) => {
+                  setMeetingModalParticipant(participant);
+                  setIsMeetingModalOpen(true);
+                }}
             />
         ) : (
             <div className="w-2/3 bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col items-center justify-center text-gray-400 h-full">
@@ -579,6 +615,22 @@ function MessagesPageContent() {
             </div>
         )}
       </div>
+
+      <ScheduleMeetingModal 
+        isOpen={isMeetingModalOpen}
+        onClose={() => setIsMeetingModalOpen(false)}
+        initialParticipant={meetingModalParticipant}
+        connectedUsers={conversations
+          .filter(c => c.status === 'accepted' && c.type !== 'group')
+          .map(c => c.participants.find(p => p._id !== user._id))
+          .filter(Boolean)
+        }
+        onMeetingCreated={(newMeeting) => {
+          setMeetings(prev => [...prev, newMeeting]);
+          console.log("Redirecting to:", newMeeting.roomId || newMeeting.meetingCode);
+          router.push(`/meet/${newMeeting.roomId}`);
+        }}
+      />
     </div>
   );
 }

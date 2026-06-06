@@ -6,6 +6,7 @@ import { useAuth } from '../../../context/AuthContext';
 import Navbar from '../../../components/Navbar';
 import { useRouter } from 'next/navigation';
 import { Building2, Globe, FileText, Loader, Rocket } from 'lucide-react';
+import { API_URL } from '@/utils/api';
 
 export default function CreateStartupPage() {
   const { user, loading: authLoading } = useAuth();

@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, MoreVertical, Phone, Video, Info, Smile, Paperclip, Check, CheckCheck, Edit2, Trash2, X, Reply, Ban } from 'lucide-react';
+import { Send, MoreVertical, Phone, Video, Info, Smile, Paperclip, Check, CheckCheck, Edit2, Trash2, X, Reply, Ban, Calendar, ListVideo } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import MessageRequest from './MessageRequest';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { API_URL } from '@/utils/api';
 
 export default function ChatWindow({ 
   conversation, 
@@ -14,13 +17,19 @@ export default function ChatWindow({
   onDeclineRequest,
   loadingMessages,
   onTyping,
-  isOtherTyping
+  isOtherTyping,
+  meetings = [],
+  onOpenScheduleModal
 }) {
+  const router = useRouter();
+  const { token } = useAuth();
+  
   const [newMessage, setNewMessage] = useState('');
   const [editingMessageId, setEditingMessageId] = useState(null);
   const [editContent, setEditContent] = useState('');
   const [showDeleteMenu, setShowDeleteMenu] = useState(null); // messageId
   const [replyingTo, setReplyingTo] = useState(null);
+  const [showMeetingHistory, setShowMeetingHistory] = useState(false);
   
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -106,6 +115,45 @@ export default function ChatWindow({
       setShowDeleteMenu(null);
   };
 
+  const handleInstantVideoMeet = async () => {
+    if (!token) return;
+    try {
+      const now = new Date();
+      const endTime = new Date(now.getTime() + 60 * 60 * 1000); // +1 hour
+      
+      const res = await fetch(`${API_URL}/api/meetings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: `Instant Meeting with ${currentUser.name}`,
+          agenda: 'Instant Video Meeting',
+          scheduledDate: now.toISOString().split('T')[0],
+          startTime: now.toTimeString().slice(0, 5),
+          endTime: endTime.toTimeString().slice(0, 5),
+          participants: [otherParticipant._id]
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        onSendMessage(`I've started an instant video meeting! Join here: /meet/${data.data.roomId}`);
+        router.push(`/meet/${data.data.roomId}`);
+      } else {
+        alert(data.error || 'Failed to start meeting');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error starting meeting');
+    }
+  };
+
+  const relevantMeetings = meetings.filter(m => 
+    m.participants?.some(p => p.userId?._id === otherParticipant._id) || 
+    m.hostId?._id === otherParticipant._id
+  );
+
   if (isIncomingRequest) {
     return (
         <MessageRequest 
@@ -163,6 +211,27 @@ export default function ChatWindow({
         </div>
         
         <div className="flex items-center space-x-2 text-gray-400">
+            {/* Meeting Actions */}
+            {!isGroup && !isBlocked && !isDeclined && !isIncomingRequest && (
+              <>
+                <button 
+                    onClick={handleInstantVideoMeet}
+                    className="p-2 hover:bg-blue-50 hover:text-blue-600 rounded-full transition"
+                    title="Start Video Meet"
+                >
+                    <Video className="h-5 w-5" />
+                </button>
+
+                <button 
+                    onClick={() => setShowMeetingHistory(!showMeetingHistory)}
+                    className={`p-2 hover:bg-blue-50 hover:text-blue-600 rounded-full transition ${showMeetingHistory ? 'bg-blue-50 text-blue-600' : ''}`}
+                    title="View Meetings"
+                >
+                    <ListVideo className="h-5 w-5" />
+                </button>
+              </>
+            )}
+
             <button 
                 onClick={() => onBlockUser && onBlockUser(otherParticipant._id)}
                 className="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition"
@@ -178,7 +247,29 @@ export default function ChatWindow({
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-        {loadingMessages ? (
+        {showMeetingHistory ? (
+          <div className="bg-white p-4 rounded-xl shadow-sm h-full overflow-y-auto border border-gray-100">
+            <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-100">
+              <h3 className="font-bold text-gray-800">Meeting History with {otherParticipant.name}</h3>
+              <button onClick={() => setShowMeetingHistory(false)} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+            </div>
+            {relevantMeetings.length === 0 ? (
+              <div className="text-center py-10 text-gray-500">No previous or upcoming meetings.</div>
+            ) : (
+              <div className="space-y-3">
+                {relevantMeetings.map(m => (
+                  <div key={m._id} className="p-3 border border-gray-100 rounded-lg hover:bg-gray-50 flex justify-between items-center">
+                    <div>
+                      <h4 className="font-bold text-sm text-gray-800">{m.title}</h4>
+                      <div className="text-xs text-gray-500">{new Date(m.scheduledDate).toLocaleDateString()} • {m.startTime} - {m.endTime}</div>
+                    </div>
+                    <button onClick={() => router.push(`/meet/${m.roomId}`)} className="text-xs font-bold text-primary hover:underline px-3 py-1.5 bg-blue-50 rounded-lg">Join / View</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : loadingMessages ? (
             <div className="flex justify-center pt-10">
                 <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
             </div>

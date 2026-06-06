@@ -201,10 +201,10 @@ export default function CreatePostPage() {
                 {(postingAs !== 'personal' || user?.role === 'founder') && (
                   <div className="flex gap-2 overflow-x-auto pb-2">
                     {[
-                      { id: 'general', label: 'General', icon: '📝' },
-                      { id: 'update', label: 'Update', icon: '📢' },
-                      { id: 'hiring', label: 'Hiring', icon: '🤝' },
-                      { id: 'milestone', label: 'Milestone', icon: '🚀' }
+                      { id: 'general', label: 'General', icon: '' },
+                      { id: 'update', label: 'Update', icon: '' },
+                      { id: 'hiring', label: 'Hiring', icon: '' },
+                      { id: 'milestone', label: 'Milestone', icon: '' }
                     ].map(cat => (
                       <button
                         key={cat.id}
@@ -269,7 +269,7 @@ export default function CreatePostPage() {
                       }}
                       className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 shadow-lg hover:bg-red-650 transition"
                     >
-                      ✕
+                      
                     </button>
                   </div>
                 )}

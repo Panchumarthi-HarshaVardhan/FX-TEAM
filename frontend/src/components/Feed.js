@@ -55,7 +55,7 @@ const demoPosts = [
       stage: 'Seed',
       industry: 'AI'
     },
-    title: 'Just launched Nexus AI! 🚀',
+    title: 'Just launched Nexus AI! ',
     content: 'After 8 months of building, we are finally launching our AI-powered pitch deck generator. Thank you to the entire FounderX community for the support!',
     image: 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=modern%20AI%20pitch%20deck%20template%20preview%2C%20blue%20and%20white%2C%20clean%20design&image_size=square',
     likes: 423,
@@ -80,7 +80,7 @@ const demoPosts = [
       stage: 'Pre-seed',
       industry: 'FinTech'
     },
-    title: 'We raised $750K pre-seed! 🎉',
+    title: 'We raised $750K pre-seed! ',
     content: 'Thrilled to announce our pre-seed round led by K2 Partners. This is just the beginning of our journey to revolutionize treasury management for startups.',
     image: 'https://coresg-normal.trae.ai/api/ide/v1/text_to_image?prompt=modern%20fintech%20funding%20announcement%20graphic%2C%20blue%20and%20white%2C%20clean%20design&image_size=square',
     likes: 891,

@@ -3,7 +3,7 @@
  * Upgraded with Stem-Based Intent Routing, General Business Mentor Engine, and Defensive Uptime Bounds.
  */
 
-const SYSTEM_PROMPT_INTRO = "🚀 **FounderX AI Mentor Advice**\n\n";
+const SYSTEM_PROMPT_INTRO = " **FounderX AI Mentor Advice**\n\n";
 
 const MENTOR_DATA = {
   investors: {
@@ -32,7 +32,7 @@ Here is your **Investor Acquisition Master Roadmap**:
    - *Clear Call to Action: "Are you open to a 10-minute feedback call next Tuesday?"*
 5. **Get Verified**: Complete profile verification to earn the Blue Checkmark, boosting investor reply rates by **300%**.
 
-*💡 Mentor Checklist:*
+* Mentor Checklist:*
 - [ ] Complete FounderX Startup Profile to 100%
 - [ ] Get a "Verified Profile" badge
 - [ ] Record a 60-second watch video pitch`,
@@ -65,7 +65,7 @@ Here is your **Complete Validation Framework**:
 3. **Drive Validation Traffic**: Share your landing page link and value proposition in the **FounderX Feed**. Our community of 10K+ founders is excellent for constructive critiques.
 4. **Measure "Skin in the Game"**: True validation is currency, time, or data. If people are willing to pay a pre-order fee, fill out a detailed 10-question application, or use a manual prototype weekly, you have validated demand.
 
-*💡 Pro-Tip:* If users aren't expressing deep frustration with the status quo, they won't pay for your solution. Fall in love with the problem, not your software!`,
+* Pro-Tip:* If users aren't expressing deep frustration with the status quo, they won't pay for your solution. Fall in love with the problem, not your software!`,
       actions: ['Create a startup plan', 'Best business model for my idea', 'Go to Community Feed']
     }
   },
@@ -93,7 +93,7 @@ Here is your **5-Step Startup Blueprint**:
 4. **Financial Runway Mapping**: Calculate your "Burn Rate" (monthly spending) and "Runway" (months until cash runs out).
 5. **Set Weekly Sprints**: Startups succeed through speed. Focus on 1 key metric each week (e.g., talk to 5 users, build sign-up form).
 
-*💡 Mentor Checklist:*
+* Mentor Checklist:*
 - [ ] Lean Canvas completed
 - [ ] Core metric identified
 - [ ] Co-founder expectations written down`,
@@ -129,7 +129,7 @@ Here is the **10-Slide Gold Standard Pitch Deck Structure**:
 9. **The Team (Slide 9)**: Why you have the unfair advantage to execute this plan.
 10. **The Ask (Slide 10)**: Amount raising and exactly what key milestones that cash unlocks.
 
-*🚀 Pitch Boosting on FounderX:*
+* Pitch Boosting on FounderX:*
 Upload a **60-second vertical video pitch** to our **Watch** feed. Explain: *Problem → Solution → Traction → Call to Action*. Keep it high energy and natural!`,
       actions: ['How to raise funding?', 'How do I find investors?', 'Explore Pitch Videos']
     }
@@ -160,7 +160,7 @@ Here is your **Co-founder Recruitment Strategy**:
 3. **Leverage FounderX Networking**: Filter profiles on the platform using skill tags like "Looking for Co-founder". Review their past posts on our **Feed** to check their work ethic and insights.
 4. **Run a 2-Week Trial Sprint**: Before marrying a co-founder legally, work together on a simple test project (e.g. launch a landing page, run 10 customer discovery interviews). Check their communication, speed, and reliability.
 
-*💡 Pro-Tip:* Great developers don't build for free just because you "have an idea". Show them wireframes, user waitlists, or initial sales to prove you are a high-execution partner they can trust!`,
+* Pro-Tip:* Great developers don't build for free just because you "have an idea". Show them wireframes, user waitlists, or initial sales to prove you are a high-execution partner they can trust!`,
       actions: ['Create a startup plan', 'How do I validate my idea?', 'Go to Community Feed']
     }
   },
@@ -219,7 +219,7 @@ Here is the **Fundraising Execution Framework**:
 3. **Prepare Your Data Room**: Put your incorporation papers, cap table, pitch deck, user cohort graphs, and financial runway forecasts in a secure folder.
 4. **Organize a Concentrated Campaign**: Pitch all investors within a 3-week window. This creates healthy FOMO (Fear Of Missing Out) and speeds up term sheet negotiations.
 
-*💡 Pro-Tip:* Never tell an investor you "just need money to hire developers". Investors invest in *growth systems*, not expense budgets! Explain how $1 in their funding yields $5 in future scale.`,
+* Pro-Tip:* Never tell an investor you "just need money to hire developers". Investors invest in *growth systems*, not expense budgets! Explain how $1 in their funding yields $5 in future scale.`,
       actions: ['How do I find investors?', 'Improve my pitch', 'Best business model for my idea']
     }
   },
@@ -250,7 +250,7 @@ Here are the **Top 4 Startup Business Models**:
    - *Pros*: Lowest barrier to entry for early users; billing scales as they grow.
 4. **Freemium**: Offering basic features for free while charging for premium workflows, storage, or telemetry (e.g. LinkedIn Premium, ChatGPT Plus).
 
-*💡 Mentor Framework to Pick Your Model:*
+* Mentor Framework to Pick Your Model:*
 - If your customer gets ongoing, continuous utility: **SaaS**
 - If you facilitate buyer-seller matching: **Marketplace**
 - If your product cost is highly variable based on server usage: **Usage-Based**
@@ -284,7 +284,7 @@ Here is your **Traction & Marketing Execution Plan**:
    - *LTV (Lifetime Value)*: The total revenue you expect to earn from a customer.
    - Aim for an **LTV:CAC ratio of 3:1** or higher.
 
-*💡 Growth Sprint Checklist:*
+* Growth Sprint Checklist:*
 - [ ] List 10 online communities where your core target buyer discusses their pain points.
 - [ ] Post a value-led update on the FounderX Feed showcasing a customer success story.
 - [ ] Set up a basic analytics dashboard to track signups.`,
@@ -318,7 +318,7 @@ Here is your **Startup Legal & Equity Framework**:
 3. **Clean Cap Table Management**: Limit early equity allocations to advisors (standard is 0.2% - 1.0% maximum) and reserve 10% - 15% for an employee stock option pool (ESOP).
 4. **IP Assignment Agreements**: Ensure every single founder, contractor, and employee signs an Intellectual Property Assignment agreement, guaranteeing the company owns the code and designs outright.
 
-*💡 Legal Compliance Checklist:*
+* Legal Compliance Checklist:*
 - [ ] Delaware C-Corp incorporated.
 - [ ] Founder agreement signed with standard 4-year vesting schedules.
 - [ ] Intellectual Property (IP) Assignment completed for all builders.`,
@@ -348,7 +348,7 @@ Here is the **Founder Mental Resilience Blueprint**:
 3. **Establish a Peer Support Circle**: Share frustrations openly with other startup operators. Isolation breeds self-doubt. The **FounderX Community Feed** is an excellent place to connect.
 4. **Strict Recovery Boundaries**: Burnout degrades decision-making. Schedule non-negotiable blocks for sleep, physical exercise, and family time. A healthy founder executes 10x faster.
 
-*💡 Mental Resilience Checklist:*
+* Mental Resilience Checklist:*
 - [ ] Define one key weekly sprint target and ignore all other noise.
 - [ ] Connect with an active peer founder on FounderX for feedback.
 - [ ] Schedule at least 30 minutes of physical movement daily.`,
@@ -515,35 +515,35 @@ export function getAssistantResponse(inputMessage) {
 
       if (isLaunchPost) {
         postType = 'Product Launch';
-        title = '🚀 Product Launch: Streamlining Founder Sprints!';
+        title = ' Product Launch: Streamlining Founder Sprints!';
         description = 'The wait is over! We have officially deployed our new production platform designed to automate investor matching and founder metrics. Engineered with modern micro-animations, glassmorphic UI elements, and a blazing fast dashboard.';
         hashtags = '#ProductLaunch #TechInnovation #SaaS #FounderX';
         cta = 'Sign up for free and experience the platform today!';
         concept = 'Sleek dark-mode dashboard interface mockup displayed on a premium glassmorphic device screen.';
       } else if (isHiring) {
         postType = 'Hiring Post';
-        title = '💼 We are Hiring: Join our founding developer team!';
+        title = ' We are Hiring: Join our founding developer team!';
         description = 'We are searching for an exceptional founding Software Engineer to help build and scale our next-gen platform. If you have deep expertise in modern React/Next.js, Node.js, and love building clean UIs with harmony color systems, let\'s execute!';
         hashtags = '#Hiring #StartupJobs #SoftwareEngineer #FounderX';
         cta = 'Send us a DM or apply directly on our FounderX Startup Page!';
         concept = 'Vibrant hiring announcement graphic with high-contrast bold modern typography.';
       } else if (isFunding) {
         postType = 'Funding Update';
-        title = '💰 Funding Update: Securing Seed round to fuel growth!';
+        title = ' Funding Update: Securing Seed round to fuel growth!';
         description = 'Thrilled to announce that we have successfully secured our seed capital round. This funding allows us to accelerate product development, expand our core engineering team, and scale active user acquisitions. A huge thank you to our investors!';
         hashtags = '#Fundraising #VentureCapital #StartupFunding #Traction';
         cta = 'Read our full funding roadmap inside our Startup details!';
         concept = 'A confident founder presenting active growth trends on an interactive VC projector screen.';
       } else if (isStory) {
         postType = 'Founder Story';
-        title = '📖 Founder Story: Building in Public and validated discovery';
+        title = ' Founder Story: Building in Public and validated discovery';
         description = 'It started with a single frustration: co-founders losing hundreds of hours monthly to disjointed workflow tools. After conducting 40+ customer discovery interviews and launching multiple smoke-test waitlists, we validated real demand. Execution is our unfair advantage!';
         hashtags = '#FounderStory #Grit #BuildingInPublic #Mindset';
         cta = 'Connect with us to share startup sprints and collaborate!';
         concept = 'An intimate workspace view with team members gathered around whiteboard mockups.';
       } else if (isAnnouncement) {
         postType = 'Startup Announcement';
-        title = '📢 Startup Announcement: Embarking on a new vision!';
+        title = ' Startup Announcement: Embarking on a new vision!';
         description = 'Excited to announce the official launch of our platform designed to help builders scale and find active capital partners. We are building in public to connect co-founders and accelerate startup growth globally.';
         hashtags = '#StartupAnnouncement #BuildingInPublic #FounderX #Velocity';
         cta = 'Follow our startup page to receive real-time execution updates!';
@@ -552,13 +552,13 @@ export function getAssistantResponse(inputMessage) {
 
       // If user typed a rough phrase, let's incorporate it!
       if (isGeneralPostGen && inputMessage.length > 15 && !inputMessage.includes('Generator') && !inputMessage.includes('generator')) {
-        title = '🚀 Milestone Update: ' + inputMessage.replace(/create a post|create post|generate content|marketing post/gi, '').trim();
+        title = ' Milestone Update: ' + inputMessage.replace(/create a post|create post|generate content|marketing post/gi, '').trim();
         description = `Excited to announce a massive milestone: we just "${inputMessage.replace(/create a post|create post|generate content|marketing post/gi, '').trim()}"!\n\nThis represents a huge sprint for our founding team and brings us one step closer to accelerating startup growth. Thank you to everyone supporting us!`;
         concept = 'Beautiful abstract data dashboard demonstrating traction growth curves.';
       }
 
       return {
-        text: `🚀 **FounderX AI ${postType} Formulator**
+        text: ` **FounderX AI ${postType} Formulator**
 
 I have formatted a premium, publishable startup milestone post based on your details. You can review, edit, schedule, or publish it live in one click below!
 
@@ -585,7 +585,7 @@ IMAGE_CONCEPT: ${concept}
     if (createStartupKeywords.some(kw => normalized.includes(kw))) {
       return {
         actionTrigger: 'CREATE_STARTUP',
-        text: "🚀 **FounderX AI Operator Activated**\n\nGreat choice! Let's build your professional **Startup Profile** on FounderX. I will guide you through this step-by-step to optimize your details for VCs.\n\nFirst, **what is your startup name?**",
+        text: " **FounderX AI Operator Activated**\n\nGreat choice! Let's build your professional **Startup Profile** on FounderX. I will guide you through this step-by-step to optimize your details for VCs.\n\nFirst, **what is your startup name?**",
         actions: ['Cancel']
       };
     }
@@ -595,7 +595,7 @@ IMAGE_CONCEPT: ${concept}
     if (createPostKeywords.some(kw => normalized.includes(kw)) && !normalized.includes('ai post') && !normalized.includes('generator')) {
       return {
         actionTrigger: 'CREATE_POST',
-        text: "🚀 **FounderX AI Operator Activated**\n\nAwesome! Let's write and publish an engaging **Startup Update Post** to the global feed.\n\nFirst, **what is the title of your post?**",
+        text: " **FounderX AI Operator Activated**\n\nAwesome! Let's write and publish an engaging **Startup Update Post** to the global feed.\n\nFirst, **what is the title of your post?**",
         actions: ['Cancel']
       };
     }
@@ -605,7 +605,7 @@ IMAGE_CONCEPT: ${concept}
     if (editProfileKeywords.some(kw => normalized.includes(kw))) {
       return {
         actionTrigger: 'EDIT_PROFILE',
-        text: "🚀 **FounderX AI Operator Activated**\n\nOutstanding! Let's optimize your **Founder Profile** details to make it highly attractive for connections.\n\nFirst, **what is your current role/job title?** (e.g. Founder & CEO, Lead Engineer)",
+        text: " **FounderX AI Operator Activated**\n\nOutstanding! Let's optimize your **Founder Profile** details to make it highly attractive for connections.\n\nFirst, **what is your current role/job title?** (e.g. Founder & CEO, Lead Engineer)",
         actions: ['Cancel']
       };
     }
@@ -615,7 +615,7 @@ IMAGE_CONCEPT: ${concept}
     if (uploadPitchKeywords.some(kw => normalized.includes(kw))) {
       return {
         actionTrigger: 'UPLOAD_PITCH',
-        text: "🚀 **FounderX AI Operator Activated**\n\nExcellent decision! Let's publish your **Pitch Presentation Deck** to your profile to capture investor attention.\n\nFirst, **what is the title of this pitch deck?** (e.g. Seed Overview, Pitch presentation)",
+        text: " **FounderX AI Operator Activated**\n\nExcellent decision! Let's publish your **Pitch Presentation Deck** to your profile to capture investor attention.\n\nFirst, **what is the title of this pitch deck?** (e.g. Seed Overview, Pitch presentation)",
         actions: ['Cancel']
       };
     }
@@ -625,7 +625,7 @@ IMAGE_CONCEPT: ${concept}
     if (uploadVideoKeywords.some(kw => normalized.includes(kw))) {
       return {
         actionTrigger: 'UPLOAD_VIDEO',
-        text: "🚀 **FounderX AI Operator Activated**\n\nSplendid! Startup vertical videos get **4.5x more click-throughs** on the Watch feed.\n\nFirst, **what is the title of your vertical watch video?** (e.g. 60-Second Elevate Pitch, Product Walkthrough)",
+        text: " **FounderX AI Operator Activated**\n\nSplendid! Startup vertical videos get **4.5x more click-throughs** on the Watch feed.\n\nFirst, **what is the title of your vertical watch video?** (e.g. 60-Second Elevate Pitch, Product Walkthrough)",
         actions: ['Cancel']
       };
     }
@@ -635,7 +635,7 @@ IMAGE_CONCEPT: ${concept}
     if (createStartupPlanKeywords.some(kw => normalized.includes(kw))) {
       return {
         actionTrigger: 'CREATE_STARTUP_PLAN',
-        text: "🚀 **Startup Plan Builder**\nStep 1 of 6\n\nWhat is your **startup name**?",
+        text: " **Startup Plan Builder**\nStep 1 of 6\n\nWhat is your **startup name**?",
         actions: ['Cancel']
       };
     }
@@ -645,7 +645,7 @@ IMAGE_CONCEPT: ${concept}
     if (generatePitchKeywords.some(kw => normalized.includes(kw))) {
       return {
         actionTrigger: 'GENERATE_PITCH',
-        text: "🚀 **AI Pitch Generator**\nStep 1 of 5\n\nI will generate a premium Pitch Suite (Elevator pitch, Investor pitch outline, and One-line tagline).\n\nFirst, what is your **startup name**?",
+        text: " **AI Pitch Generator**\nStep 1 of 5\n\nI will generate a premium Pitch Suite (Elevator pitch, Investor pitch outline, and One-line tagline).\n\nFirst, what is your **startup name**?",
         actions: ['Cancel']
       };
     }
@@ -655,7 +655,7 @@ IMAGE_CONCEPT: ${concept}
     if (matchInvestorsKeywords.some(kw => normalized.includes(kw))) {
       return {
         actionTrigger: 'MATCH_INVESTORS',
-        text: "🚀 **AI Investor Match Assistant**\nStep 1 of 5\n\nI will recommend suitable investor types and match reasons based on your stage and funding needs.\n\nFirst, what is your **startup name**?",
+        text: " **AI Investor Match Assistant**\nStep 1 of 5\n\nI will recommend suitable investor types and match reasons based on your stage and funding needs.\n\nFirst, what is your **startup name**?",
         actions: ['Cancel']
       };
     }
@@ -665,7 +665,7 @@ IMAGE_CONCEPT: ${concept}
     if (generatePostKeywords.some(kw => normalized.includes(kw))) {
       return {
         actionTrigger: 'GENERATE_POST',
-        text: "🚀 **AI Post Generator**\n\nI can convert a rough update or idea into a professional startup milestone post for the global Community Feed.\n\nFirst, **what is the rough idea or milestone update?** (e.g. 'we hit 10k users and launched a new referral code')",
+        text: " **AI Post Generator**\n\nI can convert a rough update or idea into a professional startup milestone post for the global Community Feed.\n\nFirst, **what is the rough idea or milestone update?** (e.g. 'we hit 10k users and launched a new referral code')",
         actions: ['Cancel']
       };
     }
@@ -675,7 +675,7 @@ IMAGE_CONCEPT: ${concept}
     if (generateOutreachKeywords.some(kw => normalized.includes(kw))) {
       return {
         actionTrigger: 'GENERATE_OUTREACH',
-        text: "🚀 **AI Investor Outreach Message**\nStep 1 of 3\n\nI will generate a high-conversion outreach message for pitching angels and VCs.\n\nFirst, what is the **name of the investor or VC fund** you are reaching out to?",
+        text: " **AI Investor Outreach Message**\nStep 1 of 3\n\nI will generate a high-conversion outreach message for pitching angels and VCs.\n\nFirst, what is the **name of the investor or VC fund** you are reaching out to?",
         actions: ['Cancel']
       };
     }
@@ -685,7 +685,7 @@ IMAGE_CONCEPT: ${concept}
     if (startupScoreKeywords.some(kw => normalized.includes(kw))) {
       return {
         actionTrigger: 'STARTUP_SCORE',
-        text: "🚀 **AI Startup Score**\nStep 1 of 5\n\nI will evaluate your startup details and calculate a score out of 100 with actionable VC improvement tips.\n\nFirst, what is your **startup name**?",
+        text: " **AI Startup Score**\nStep 1 of 5\n\nI will evaluate your startup details and calculate a score out of 100 with actionable VC improvement tips.\n\nFirst, what is your **startup name**?",
         actions: ['Cancel']
       };
     }
@@ -719,7 +719,7 @@ IMAGE_CONCEPT: ${concept}
       'confused': "No problem. Tell me your idea or problem in one line, and I’ll help you break it into clear next steps.",
       'stuck': "Being stuck is part of the process! Tell me what bottleneck you're facing (e.g. tech, MVP, user interest) and let's troubleshoot.",
       'lost': "Take a breath! Tell me your core startup concept in 1 sentence, and we'll outline the first 3 tasks to get you moving.",
-      'thanks': "You are very welcome! 🚀 Keep executing, stay close to your customers, and let me know if you hit any other hurdles.",
+      'thanks': "You are very welcome!  Keep executing, stay close to your customers, and let me know if you hit any other hurdles.",
       'thank you': "Happy to support! Accelerating your startup journey is what I'm here for. Go make something people want!",
       'how are you': "I am energized and ready to mentor! Tell me about your startup idea, or let's refine your pitching framework today.",
       'nice': "Outstanding! Action beats theory every single time. What is your next move?",
@@ -730,7 +730,7 @@ IMAGE_CONCEPT: ${concept}
     for (const [kw, resp] of Object.entries(casualMatches)) {
       if (normalized.includes(kw)) {
         return {
-          text: enforceTokenLimit(`💡 **FounderX AI Mentor**\n\n${resp}`, 120),
+          text: enforceTokenLimit(` **FounderX AI Mentor**\n\n${resp}`, 120),
           actions: [
             'Create a startup plan',
             'How do I validate my idea?',
@@ -800,7 +800,7 @@ IMAGE_CONCEPT: ${concept}
 
       if (isDetailed && category.detailed) {
         const detailedData = category.detailed;
-        const textToReturn = `🚀 **Detailed FounderX AI Roadmap**\n\n${detailedData.text}`;
+        const textToReturn = ` **Detailed FounderX AI Roadmap**\n\n${detailedData.text}`;
         return {
           text: enforceTokenLimit(textToReturn, 700),
           actions: detailedData.actions || [],
@@ -809,7 +809,7 @@ IMAGE_CONCEPT: ${concept}
       }
 
       const shortData = category.short;
-      const formattedShortText = `🚀 **FounderX AI Mentor**
+      const formattedShortText = ` **FounderX AI Mentor**
       
 **Problem:** ${shortData.problem}
 **Best Move:** ${shortData.move}
@@ -913,7 +913,7 @@ IMAGE_CONCEPT: ${concept}
         question = `Who is your primary customer (B2B business or B2C consumer) for this **${subject}**?`;
       }
 
-      const dynamicText = `🚀 **FounderX AI Mentor**
+      const dynamicText = ` **FounderX AI Mentor**
 
 **Problem:** ${problem}
 **Best Move:** ${move}
@@ -936,7 +936,7 @@ IMAGE_CONCEPT: ${concept}
     }
 
     // GENERAL CONCISE RESILIENT FALLBACK
-    const shortFallback = `🚀 **FounderX AI Mentor**
+    const shortFallback = ` **FounderX AI Mentor**
 
 **Problem:** Operating startup building or platform features without a structured action sequence causes wasted effort.
 **Best Move:** Outline the single biggest assumption you are making and test it within the next 48 hours.
@@ -959,7 +959,7 @@ IMAGE_CONCEPT: ${concept}
   } catch (err) {
     console.error("AI Assistant Matching caught runtime breakdown:", err);
     return {
-      text: "🚀 **FounderX AI Operator**\n\nI experienced a minor latency. Tell me your startup question or concept, and let's build your next steps!",
+      text: " **FounderX AI Operator**\n\nI experienced a minor latency. Tell me your startup question or concept, and let's build your next steps!",
       actions: ['Create Startup Profile', 'Explain FounderX']
     };
   }
