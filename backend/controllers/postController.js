@@ -169,6 +169,9 @@ exports.createPost = async (req, res) => {
     if (parentPostId) {
       const parentPost = await Post.findById(parentPostId);
       if (parentPost) {
+        parentPost.comments.push(post._id);
+        await parentPost.save();
+
         await createNotification({
           recipient: parentPost.authorId,
           sender: req.user.id,
@@ -184,6 +187,12 @@ exports.createPost = async (req, res) => {
     await post.populate('authorId', 'name username profileImage role verificationBadge');
     if (startupId) {
       await post.populate('startupId', 'name logo');
+    }
+    if (parentPostId) {
+      await post.populate({
+        path: 'parentPostId',
+        populate: { path: 'authorId', select: 'name username profileImage' }
+      });
     }
 
     res.status(201).json({
@@ -280,6 +289,10 @@ exports.getPostsByHashtag = async (req, res) => {
         path: 'repostOf',
         populate: { path: 'authorId', select: 'name username profileImage' }
       })
+      .populate({
+        path: 'parentPostId',
+        populate: { path: 'authorId', select: 'name username profileImage' }
+      })
       .sort({ createdAt: -1 });
 
     const postsWithStatus = posts.map(post => post.toPublicJSON(req.user ? req.user.id : null));
@@ -306,6 +319,14 @@ exports.getPosts = async (req, res) => {
     
     // Build query
     let query = {};
+    if (req.query.parentPostId) {
+      query.parentPostId = req.query.parentPostId;
+    } else {
+      query.$or = [
+        { parentPostId: null },
+        { parentPostId: { $exists: false } }
+      ];
+    }
     
     // Filter by type if provided
      if (req.query.type === 'video') {
@@ -320,6 +341,23 @@ exports.getPosts = async (req, res) => {
          query.contentType = { $ne: 'video' };
      }
     
+    // Filter by author role
+    if (req.query.authorRole) {
+      const users = await User.find({ role: req.query.authorRole }).select('_id');
+      const userIds = users.map(u => u._id);
+      query.authorId = { $in: userIds };
+    }
+
+    // Filter by linked startup
+    if (req.query.hasStartup === 'true') {
+      query.startupId = { $ne: null };
+    }
+
+    // Filter by category
+    if (req.query.category) {
+      query.category = req.query.category;
+    }
+
     console.log('GET /posts Query:', JSON.stringify(query));
     
     // Filter by startup if provided
@@ -350,8 +388,16 @@ exports.getPosts = async (req, res) => {
     const total = await Post.countDocuments(query);
 
     const posts = await Post.find(query)
-      .populate('authorId', 'name profileImage role verificationBadge')
+      .populate('authorId', 'name username profileImage role verificationBadge')
       .populate('startupId', 'name logo industry')
+      .populate({
+        path: 'repostOf',
+        populate: { path: 'authorId', select: 'name username profileImage' }
+      })
+      .populate({
+        path: 'parentPostId',
+        populate: { path: 'authorId', select: 'name username profileImage' }
+      })
       .sort(sort)
       .skip(startIndex)
       .limit(limit);
@@ -385,10 +431,6 @@ exports.getPost = async (req, res) => {
       .populate('authorId', 'name profileImage role verificationBadge username')
       .populate('startupId', 'name logo')
       .populate({
-        path: 'comments',
-        populate: { path: 'userId', select: 'name profileImage' }
-      })
-      .populate({
         path: 'repostOf',
         populate: { path: 'authorId', select: 'name username profileImage' }
       })
@@ -404,6 +446,14 @@ exports.getPost = async (req, res) => {
     // Get replies (posts with this parentPostId)
     const replies = await Post.find({ parentPostId: req.params.id })
       .populate('authorId', 'name profileImage role verificationBadge username')
+      .populate({
+        path: 'repostOf',
+        populate: { path: 'authorId', select: 'name username profileImage' }
+      })
+      .populate({
+        path: 'parentPostId',
+        populate: { path: 'authorId', select: 'name username profileImage' }
+      })
       .sort({ createdAt: 1 });
 
     console.log('Converting post to public JSON...');
@@ -481,6 +531,47 @@ exports.likePost = async (req, res) => {
         likes: post.likes,
         likeCount: post.likeCount
       }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: 'Server Error' });
+  }
+};
+
+// @desc    Report a post
+// @route   POST /api/posts/:id/report
+// @access  Private
+exports.reportPost = async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const post = await Post.findById(req.params.id);
+
+    if (!post) {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
+
+    if (!post.reports) {
+      post.reports = [];
+    }
+
+    const alreadyReported = post.reports.some(
+      r => r.userId.toString() === req.user.id.toString()
+    );
+
+    if (alreadyReported) {
+      return res.status(400).json({ success: false, error: 'You have already reported this post' });
+    }
+
+    post.reports.push({
+      userId: req.user.id,
+      reason: reason || 'No reason provided'
+    });
+
+    await post.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Post reported successfully'
     });
   } catch (error) {
     console.error(error);

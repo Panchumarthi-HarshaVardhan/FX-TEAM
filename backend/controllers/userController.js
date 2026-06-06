@@ -493,7 +493,17 @@ exports.followUser = async (req, res) => {
             return res.status(404).json({ success: false, error: 'User not found' });
         }
 
-        if (user.following.includes(req.params.id)) {
+        // Initialize arrays if they don't exist (safety for legacy accounts)
+        if (!user.following) {
+            user.following = [];
+        }
+        if (!targetUser.followers) {
+            targetUser.followers = [];
+        }
+
+        const isAlreadyFollowing = user.following.some(id => id.toString() === req.params.id);
+
+        if (isAlreadyFollowing) {
             // Unfollow
             user.following.pull(req.params.id);
             targetUser.followers.pull(req.user.id);
@@ -518,7 +528,7 @@ exports.followUser = async (req, res) => {
             return res.status(200).json({ success: true, data: { isFollowing: true } });
         }
     } catch (error) {
-        console.error(error);
+        console.error('followUser error:', error);
         res.status(500).json({ success: false, error: 'Server Error' });
     }
 };

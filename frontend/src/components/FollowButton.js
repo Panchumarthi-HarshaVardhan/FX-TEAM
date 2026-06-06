@@ -1,16 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { UserPlus, Check, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { API_URL } from '@/utils/api';
+import { getApiUrl } from '@/utils/api';
 
 export default function FollowButton({ userId, initialIsFollowing = false, onToggle, className = '' }) {
-  const { user, token } = useAuth();
+  const { user, token, setUser } = useAuth();
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setIsFollowing(initialIsFollowing);
+  }, [initialIsFollowing]);
 
   const handleFollow = async (e) => {
     e.preventDefault();
@@ -21,10 +25,10 @@ export default function FollowButton({ userId, initialIsFollowing = false, onTog
       return;
     }
 
-    // Check authentication
-    if (!user || !token) {
-      // Optional: Add toast here "Please login to follow"
-      router.push(`/auth/login?redirect=/profile/${userId}`); // Improved redirect
+    // Get token - fallback to localStorage if context token is null (hydration edge case)
+    const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('token') : null);
+    if (!user || !authToken) {
+      router.push(`/auth/login?redirect=/profile/${userId}`);
       return;
     }
 
@@ -40,10 +44,11 @@ export default function FollowButton({ userId, initialIsFollowing = false, onTog
     setIsFollowing(newState);
 
     try {
+      const API_URL = getApiUrl();
       const res = await fetch(`${API_URL}/api/users/${userId}/follow`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${authToken}`,
           'Content-Type': 'application/json'
         }
       });
@@ -58,6 +63,13 @@ export default function FollowButton({ userId, initialIsFollowing = false, onTog
       if (!data.success) {
         throw new Error(data.error || 'API returned unsuccessful response');
       } else {
+        // Update user following list in AuthContext
+        if (setUser && user) {
+          const updatedFollowing = newState
+            ? [...(user.following || []), userId]
+            : (user.following || []).filter(id => id.toString() !== userId.toString());
+          setUser({ ...user, following: updatedFollowing });
+        }
         if (onToggle) onToggle(newState);
       }
     } catch (error) {
@@ -85,12 +97,12 @@ export default function FollowButton({ userId, initialIsFollowing = false, onTog
       ) : isFollowing ? (
         <>
           <Check className="h-4 w-4 mr-2" />
-          Following
+          Connected
         </>
       ) : (
         <>
           <UserPlus className="h-4 w-4 mr-2" />
-          Follow
+          Connect
         </>
       )}
     </button>

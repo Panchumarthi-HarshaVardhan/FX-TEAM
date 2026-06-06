@@ -26,6 +26,22 @@ async function testMessagingFlow() {
 
     console.log('Users created:', userA.name, userB.name);
 
+    // Mutual follow to unlock messaging
+    console.log('Establishing mutual follow...');
+    const followBRes = await fetch(`${API_URL}/users/${idB}/follow`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${tokenA}` }
+    });
+    const followBData = await followBRes.json();
+    console.log('User A follows User B:', followBData.success);
+
+    const followARes = await fetch(`${API_URL}/users/${idA}/follow`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${tokenB}` }
+    });
+    const followAData = await followARes.json();
+    console.log('User B follows User A:', followAData.success);
+
     // 3. User A sends message to User B
     console.log('Sending message...');
     const msgRes = await fetch(`${API_URL}/messages`, {

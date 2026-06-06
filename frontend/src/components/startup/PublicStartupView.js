@@ -122,7 +122,7 @@ export default function PublicStartupView({ startup }) {
                     isFollowing ? 'bg-slate-200 text-slate-800' : 'bg-primary text-white hover:bg-blue-700'
                   }`}
                 >
-                  {isFollowing ? 'Following' : 'Follow'}
+                  {isFollowing ? 'Connected' : 'Connect'}
                 </button>
                 {user && user.role === 'investor' && (
                   <button 

@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+// Use global fetch
 
 const API_URL = 'http://localhost:3000';
 

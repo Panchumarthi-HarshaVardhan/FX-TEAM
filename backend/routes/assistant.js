@@ -21,6 +21,13 @@ const { createNotification } = require('../utils/socialHelpers');
 // Auth middleware
 const { protect, optionalProtect } = require('../middleware/auth');
 
+// RAG Services
+const aiRouter = require('../services/aiRouter');
+const retrievalService = require('../services/retrievalService');
+const ragSecurity = require('../middleware/ragSecurity');
+const ragService = require('../services/ragService');
+const groqService = require('../services/groqService');
+
 // ──────────────────────────────────────────────────────────────────────
 // Multer setup for voice + file uploads inside chatbot
 // ──────────────────────────────────────────────────────────────────────
@@ -116,7 +123,7 @@ async function describeImage(buffer, mimetype) {
   const dataUri = `data:${mimetype};base64,${base64}`;
 
   const res = await axios.post(`${GROQ_BASE}/chat/completions`, {
-    model: 'llama-3.3-70b-versatile',
+    model: 'llama-3.2-11b-vision-preview',
     messages: [{
       role: 'user',
       content: [
@@ -675,6 +682,50 @@ router.post('/chat', optionalProtect, chatUpload.single('file'), async (req, res
     // ── Handle uploaded file ──
     if (req.file) {
       const file = req.file;
+
+      // PDF, DOCX, TXT document uploader RAG interception
+      if (
+        file.mimetype === 'application/pdf' ||
+        file.mimetype === 'text/plain' ||
+        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        file.originalname.endsWith('.pdf') ||
+        file.originalname.endsWith('.docx') ||
+        file.originalname.endsWith('.txt')
+      ) {
+        if (userId === 'anonymous') {
+          return res.status(200).json({
+            success: true,
+            text: 'Please log in to upload and index documents in the chat.',
+            type: 'chat_response'
+          });
+        }
+        try {
+          console.log(`Indexing document uploaded via chatbot: ${file.originalname}`);
+          const host = req.get('host');
+          const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
+          
+          // Ingest/Index document in Pinecone
+          const doc = await ragService.ingestDocument({
+            fileBuffer: file.buffer,
+            originalName: file.originalname,
+            mimeType: file.mimetype,
+            ownerId: req.user._id,
+            sourceType: 'document',
+            visibility: 'private',
+            host,
+            protocol
+          });
+
+          // Extract text for immediate LLM context
+          const extractedText = await ragService.extractText(file.buffer, file.mimetype);
+          const previewText = extractedText ? extractedText.substring(0, 15000) : '';
+          fileContext = `[User uploaded a document named "${file.originalname}"]. Extracted text content:\n${previewText}`;
+        } catch (ingestErr) {
+          console.error('Document ingestion in chat failed:', ingestErr);
+          fileContext = `[User uploaded a document named "${file.originalname}" but parsing failed: ${ingestErr.message}]`;
+        }
+      }
+
       fileType = file.mimetype.split('/')[0]; // audio, image, video, application
 
       // Voice input → transcribe
@@ -742,6 +793,51 @@ router.post('/chat', optionalProtect, chatUpload.single('file'), async (req, res
         return res.status(200).json({ success: true, text: result.content, type: result.type, data: result.data, fileUrl });
       }
       pendingActions.delete(userId);
+    }
+
+    // ── AI Router Intent Classification ──
+    let routerConfig;
+    try {
+      routerConfig = await aiRouter.route(fullPrompt);
+      console.log(`[RAG Router] Classified query as: ${routerConfig.route} (strategy: ${routerConfig.retrievalStrategy})`);
+    } catch (routeErr) {
+      console.error('RAG Router classification failed, defaulting to normal-chat:', routeErr);
+      routerConfig = { route: 'normal-chat', retrievalStrategy: 'fallback', promptTemplate: null, sourceType: '' };
+    }
+
+    // ── If Route is not normal-chat, run RAG Pipeline ──
+    if (routerConfig.route !== 'normal-chat') {
+      try {
+        console.log(`[RAG Execution] Starting retrieval for route: ${routerConfig.route}`);
+        const retrievalResult = await retrievalService.retrieve(fullPrompt, userId, {
+          sourceType: routerConfig.sourceType
+        });
+
+        console.log(`[RAG Execution] Retrieved ${retrievalResult.chunks.length} chunks, confidence: ${retrievalResult.confidence}`);
+
+        const aiResponse = await groqService.generateAnswer(
+          fullPrompt,
+          retrievalResult,
+          routerConfig.promptTemplate
+        );
+
+        pushHistory(userId, 'assistant', aiResponse.answer);
+
+        return res.status(200).json({
+          success: true,
+          text: aiResponse.answer,
+          type: 'chat_response',
+          route: routerConfig.route,
+          sources: aiResponse.sources,
+          confidence: aiResponse.confidence,
+          fileUrl,
+          actions: ['Check my founder score', 'Analyze my startup', 'Search startups']
+        });
+      } catch (ragErr) {
+        console.error('[RAG Execution] Failed, falling back to normal chat flow:', ragErr);
+        // If RAG pipeline fails, we fallback to normal-chat route handling
+        routerConfig.route = 'normal-chat';
+      }
     }
 
     // ── Route the message ──

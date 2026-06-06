@@ -89,7 +89,7 @@ const postSchema = new mongoose.Schema({
   }],
   comments: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Comment'
+    ref: 'Post'
   }],
   shares: {
     type: Number,
@@ -188,6 +188,20 @@ const postSchema = new mongoose.Schema({
       default: Date.now
     },
     message: String
+  }],
+  reports: [{
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    reason: {
+      type: String,
+      default: 'No reason provided'
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
   }]
 }, {
   timestamps: true
@@ -210,20 +224,27 @@ postSchema.virtual('saveCount').get(function() {
 
 // Method to check if user liked the post
 postSchema.methods.isLikedBy = function(userId) {
-  return this.likes.some(like => 
-    like.userId.toString() === userId.toString()
-  );
+  if (!userId) return false;
+  return this.likes.some(like => {
+    if (!like || !like.userId) return false;
+    const lId = like.userId._id || like.userId;
+    return lId.toString() === userId.toString();
+  });
 };
 
 // Method to check if user saved the post
 postSchema.methods.isSavedBy = function(userId) {
-  return this.saves.some(save => 
-    save.userId.toString() === userId.toString()
-  );
+  if (!userId) return false;
+  return this.saves.some(save => {
+    if (!save || !save.userId) return false;
+    const sId = save.userId._id || save.userId;
+    return sId.toString() === userId.toString();
+  });
 };
 
 // Method to add like
 postSchema.methods.addLike = function(userId) {
+  if (!userId) return this.save();
   if (!this.isLikedBy(userId)) {
     this.likes.push({ userId });
     this.calculateEngagement();
@@ -233,15 +254,19 @@ postSchema.methods.addLike = function(userId) {
 
 // Method to remove like
 postSchema.methods.removeLike = function(userId) {
-  this.likes = this.likes.filter(like => 
-    like.userId.toString() !== userId.toString()
-  );
+  if (!userId) return this.save();
+  this.likes = this.likes.filter(like => {
+    if (!like || !like.userId) return false;
+    const lId = like.userId._id || like.userId;
+    return lId.toString() !== userId.toString();
+  });
   this.calculateEngagement();
   return this.save();
 };
 
 // Method to add save
 postSchema.methods.addSave = function(userId) {
+  if (!userId) return this.save();
   if (!this.isSavedBy(userId)) {
     this.saves.push({ userId });
   }
@@ -250,9 +275,12 @@ postSchema.methods.addSave = function(userId) {
 
 // Method to remove save
 postSchema.methods.removeSave = function(userId) {
-  this.saves = this.saves.filter(save => 
-    save.userId.toString() !== userId.toString()
-  );
+  if (!userId) return this.save();
+  this.saves = this.saves.filter(save => {
+    if (!save || !save.userId) return false;
+    const sId = save.userId._id || save.userId;
+    return sId.toString() !== userId.toString();
+  });
   return this.save();
 };
 
@@ -280,7 +308,6 @@ postSchema.methods.incrementViews = function() {
 postSchema.methods.calculateEngagement = function() {
   const totalInteractions = this.likeCount + this.commentCount + this.shares + this.saveCount;
   this.metrics.engagement = totalInteractions;
-  return this.save();
 };
 
 // Method to vote on poll
@@ -326,6 +353,10 @@ postSchema.methods.toPublicJSON = function(userId = null) {
     isLikedBy: userId ? this.isLikedBy(userId) : false,
     isSavedBy: userId ? this.isSavedBy(userId) : false,
     investorInterestCount: this.investorReactions ? this.investorReactions.length : 0,
+    parentPostId: this.parentPostId,
+    isRepost: this.isRepost,
+    repostOf: this.repostOf,
+    repostCount: this.repostCount,
     createdAt: this.createdAt
   };
 };

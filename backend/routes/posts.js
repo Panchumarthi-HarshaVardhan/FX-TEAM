@@ -9,7 +9,8 @@ const {
   toggleSavePost,
   investorReact,
   getPostsByHashtag,
-  getTrendingHashtags
+  getTrendingHashtags,
+  reportPost
 } = require('../controllers/postController');
 
 const { protect, optionalProtect } = require('../middleware/auth');
@@ -49,5 +50,9 @@ router
 router
   .route('/:id/react')
   .post(protect, investorReact);
+
+router
+  .route('/:id/report')
+  .post(protect, reportPost);
 
 module.exports = router;

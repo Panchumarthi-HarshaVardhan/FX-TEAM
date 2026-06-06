@@ -117,7 +117,7 @@ function StartupHeader({ startup, isFollowing, isSaved, onFollow, onSave, onInte
               }`}
             >
               <Users className="h-4 w-4" />
-              {isFollowing ? 'Following Startup' : 'Follow Startup'}
+              {isFollowing ? 'Connected' : 'Connect'}
             </button>
 
             {/* Save/Unsave Button */}
@@ -142,7 +142,7 @@ function StartupHeader({ startup, isFollowing, isSaved, onFollow, onSave, onInte
             
             {startup.website && (
               <a 
-                href={startup.website} 
+                href={startup.website.startsWith('http') ? startup.website : `https://${startup.website}`} 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="btn-secondary text-xs md:text-sm px-4 py-2 font-bold flex items-center gap-1.5"
@@ -291,7 +291,7 @@ function FounderSection({ founders, isFollowingFounder, onFollowFounder, canMess
                         : 'bg-primary text-white border-primary hover:bg-blue-600 shadow-xs'
                     }`}
                   >
-                    {isFollowingFounder ? 'Following Founder' : 'Follow Founder'}
+                    {isFollowingFounder ? 'Connected' : 'Connect'}
                   </button>
                   
                   <button 
@@ -426,7 +426,18 @@ function OpenRolesSection({ jobs, appliedJobIds, onApplyClick }) {
 }
 
 // Investor Panel Component
-function InvestorPanel({ funding }) {
+function InvestorPanel({ funding, startup, onInterest }) {
+  const { addToast } = useToast();
+
+  const handleViewPitchDeck = () => {
+    if (startup?.pitchDeck) {
+      const url = startup.pitchDeck.startsWith('http') ? startup.pitchDeck : `https://${startup.pitchDeck}`;
+      window.open(url, '_blank');
+    } else {
+      addToast('No pitch deck available for this startup.', 'info');
+    }
+  };
+
   return (
     <div className="card p-6 mb-6 bg-gradient-to-br from-blue-50 to-white border border-blue-100 rounded-2xl shadow-sm">
       <h2 className="text-xl font-bold text-heading mb-4 flex items-center gap-2 font-sans">
@@ -452,11 +463,11 @@ function InvestorPanel({ funding }) {
       </div>
       
       <div className="flex flex-wrap gap-3">
-        <button className="btn-primary text-xs font-bold px-4 py-2 flex items-center gap-1.5">
+        <button onClick={handleViewPitchDeck} className="btn-primary text-xs font-bold px-4 py-2 flex items-center gap-1.5">
           <Eye className="h-4 w-4" />
           View Pitch Deck
         </button>
-        <button className="btn-secondary text-xs font-bold px-4 py-2 flex items-center gap-1.5">
+        <button onClick={onInterest} className="btn-secondary text-xs font-bold px-4 py-2 flex items-center gap-1.5">
           <MessageSquare className="h-4 w-4" />
           Request Intro
         </button>
@@ -837,7 +848,7 @@ export default function StartupDetailPage() {
           
           <div className="space-y-6">
             {/* Hide InvestorPanel for Job Seeker role */}
-            {user?.role !== 'user' && user?.role !== 'job_seeker' && <InvestorPanel funding={startup.funding} />}
+            {user?.role !== 'user' && user?.role !== 'job_seeker' && <InvestorPanel funding={startup.funding} startup={startup} onInterest={() => setInterestModalOpen(true)} />}
             <AIStartupInsights insights={startup.aiInsights} />
           </div>
         </div>

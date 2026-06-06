@@ -486,6 +486,82 @@ export default function FounderXAssistant() {
   // FILE UPLOAD HANDLER
   const handleFileUpload = async (file) => {
     if (!file) return;
+
+    // Check if the file is a document format
+    const isDoc = file.name.endsWith('.pdf') || 
+                  file.name.endsWith('.docx') || 
+                  file.name.endsWith('.doc') || 
+                  file.name.endsWith('.txt') ||
+                  file.type === 'application/pdf' ||
+                  file.type === 'text/plain' ||
+                  file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+
+    if (isDoc) {
+      setUploadingMedia(true);
+      setErrorState(null);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('sourceType', 'document');
+        formData.append('visibility', 'private');
+
+        const headers = {};
+        const jwtToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        if (jwtToken) {
+          headers['Authorization'] = `Bearer ${jwtToken}`;
+        }
+
+        // Add a user message showing the document being uploaded
+        const userMsgId = Date.now().toString();
+        const userMsg = {
+          id: userMsgId,
+          sender: 'user',
+          text: `📄 Uploaded file: **${file.name}**`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        const updatedWithUser = [...messages, userMsg];
+        setMessages(updatedWithUser);
+
+        const res = await fetch(`${API_URL}/api/rag/upload`, {
+          method: 'POST',
+          headers,
+          body: formData
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          const confirmationText = `✅ Document **"${file.name}"** uploaded and indexed successfully. You can now ask questions about it in this session!`;
+          const aiMsg = {
+            id: (Date.now() + 1).toString(),
+            sender: 'ai',
+            text: confirmationText,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            actions: ['Check my founder score', 'Search startups']
+          };
+          const updatedHistory = [...updatedWithUser, aiMsg];
+          setMessages(updatedHistory);
+          saveHistory(updatedHistory);
+        } else {
+          throw new Error(data.message || data.error || 'Upload and indexing failed');
+        }
+      } catch (err) {
+        console.error('Document indexing failed:', err);
+        const errorMsg = {
+          id: (Date.now() + 1).toString(),
+          sender: 'ai',
+          text: `❌ Failed to parse and index document "${file.name}": ${err.message}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        const updatedHistory = [...messages, errorMsg];
+        setMessages(updatedHistory);
+        saveHistory(updatedHistory);
+        setErrorState('Document indexing failed: ' + err.message);
+      } finally {
+        setUploadingMedia(false);
+      }
+      return;
+    }
+
     setUploadingMedia(true);
     setErrorState(null);
     try {
@@ -869,6 +945,8 @@ export default function FounderXAssistant() {
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           actions: data.actions || [],
           route: data.route || null,
+          sources: data.sources || null,
+          confidence: data.confidence !== undefined ? data.confidence : null,
           media: mediaToSend, // Bind media metadata to post if returned
           type: data.type || null,
           previewData: data.data || null
@@ -3231,6 +3309,62 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
                             );
                           })}
                         </div>
+
+                        {/* Inline RAG Metadata Rendering */}
+                        {isAI && ((msg.sources && msg.sources.length > 0) || (msg.confidence !== undefined && msg.confidence !== null)) && (
+                          <div className="mt-3.5 pt-3 border-t border-slate-150/60 dark:border-slate-800 space-y-2.5">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                                Cited Sources
+                              </span>
+                            </div>
+
+                            {msg.sources && msg.sources.length > 0 && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                {msg.sources.map((source, sIdx) => {
+                                  const isDoc = source.sourceType === 'document';
+                                  const isStartup = source.sourceType === 'startupDoc';
+                                  const isInvestor = source.sourceType === 'founderDoc';
+                                  const scorePct = Math.min(100, Math.max(0, Math.round((source.score || 0) * 100)));
+
+                                  return (
+                                    <div 
+                                      key={sIdx} 
+                                      className={`flex items-center gap-2 p-2 rounded-xl border transition-all duration-250 hover:scale-[1.01] hover:shadow-sm
+                                        ${theme === 'light' 
+                                          ? 'bg-slate-50 border-slate-100 hover:bg-slate-100 hover:border-slate-200 text-slate-700' 
+                                          : 'bg-slate-950/40 border-slate-850 hover:bg-slate-900/60 hover:border-slate-800 text-slate-300'
+                                        }
+                                      `}
+                                    >
+                                      {isDoc && <FileText className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />}
+                                      {isStartup && <Rocket className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />}
+                                      {isInvestor && <Users className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" />}
+                                      {!isDoc && !isStartup && !isInvestor && <FileText className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />}
+
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-[11px] font-bold truncate" title={source.fileName || 'source document'}>
+                                          {source.fileName || 'source document'}
+                                        </p>
+                                        <p className="text-[9px] text-slate-450 dark:text-slate-550 font-bold uppercase">
+                                          {source.sourceType === 'document' ? 'Document' : source.sourceType === 'startupDoc' ? 'Startup Details' : 'Investor Profile'}
+                                        </p>
+                                      </div>
+
+                                      {scorePct > 0 && (
+                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded
+                                          ${theme === 'light' ? 'bg-slate-200/60 text-slate-600' : 'bg-slate-800 text-slate-400'}
+                                        `}>
+                                          {scorePct}% match
+                                        </span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
                         
                         {isAI && (
                           <div className="mt-2 flex justify-end">

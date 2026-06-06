@@ -29,12 +29,9 @@ import {
 import PostCard from './PostCard';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
-
-// Helper function to get safe image src
-const getSafeImageSrc = (src) => {
-  if (!src || typeof src !== "string" || src.trim() === "") return null;
-  return src;
-};
+import Link from 'next/link';
+import FollowButton from './FollowButton';
+import { getSafeImageSrc, getSafeInitial } from '../utils/helpers';
 
 // Demo data
 const demoPosts = [
@@ -191,7 +188,7 @@ function PostComposer({ user }) {
               <img src={avatarSrc} alt={user.name || "User"} className="h-full w-full object-cover" />
             ) : (
               <div className="h-full w-full bg-blue-50 flex items-center justify-center text-primary font-bold">
-                {(user.name || "U").charAt(0).toUpperCase()}
+                {getSafeInitial(user?.name)}
               </div>
             )
           ) : (
@@ -228,7 +225,7 @@ function StartupPostCard({ post }) {
             <img src={userAvatarSrc} alt={post.user.name} className="h-full w-full object-cover" />
           ) : (
             <div className="h-full w-full flex items-center justify-center text-primary font-bold">
-              {post.user.name.charAt(0).toUpperCase()}
+              {getSafeInitial(post.user?.name)}
             </div>
           )}
         </div>
@@ -258,7 +255,7 @@ function StartupPostCard({ post }) {
                   <img src={startupLogoSrc} alt={post.startup.name} className="h-full w-full object-cover" />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center text-primary font-bold">
-                    {post.startup.name.charAt(0).toUpperCase()}
+                    {getSafeInitial(post.startup?.name)}
                   </div>
                 )}
               </div>
@@ -339,7 +336,7 @@ function LaunchCard({ product }) {
             <img src={productImageSrc} alt={product.name} className="h-full w-full object-cover" />
           ) : (
             <div className="h-full w-full flex items-center justify-center text-primary text-2xl font-bold">
-              {product.name.charAt(0).toUpperCase()}
+              {getSafeInitial(product?.name)}
             </div>
           )}
         </div>
@@ -391,10 +388,75 @@ function LaunchCard({ product }) {
 
 // Trending Sidebar Component
 function TrendingSidebar() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const [trendingStartups, setTrendingStartups] = useState([]);
+  const [trendingHashtags, setTrendingHashtags] = useState([]);
+  const [activeInvestors, setActiveInvestors] = useState([]);
+  const [suggestedFounders, setSuggestedFounders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+
+        // Fetch Trending Startups
+        const startupsRes = await fetch('http://localhost:3000/api/startups', { headers });
+        const startupsData = await startupsRes.json();
+        if (startupsData.success && Array.isArray(startupsData.data)) {
+          setTrendingStartups(startupsData.data.slice(0, 3));
+        }
+
+        // Fetch Trending Hashtags
+        const hashtagsRes = await fetch('http://localhost:3000/api/posts/trending', { headers });
+        const hashtagsData = await hashtagsRes.json();
+        if (hashtagsData.success && Array.isArray(hashtagsData.data)) {
+          setTrendingHashtags(hashtagsData.data.slice(0, 5));
+        }
+
+        // Fetch Suggested Founders
+        const foundersRes = await fetch('http://localhost:3000/api/users?role=founder', { headers });
+        const foundersData = await foundersRes.json();
+        if (foundersData.success && Array.isArray(foundersData.data)) {
+          setSuggestedFounders(foundersData.data.slice(0, 3));
+        }
+
+        // Fetch Active Investors
+        const investorsRes = await fetch('http://localhost:3000/api/users?role=investor', { headers });
+        const investorsData = await investorsRes.json();
+        if (investorsData.success && Array.isArray(investorsData.data)) {
+          setActiveInvestors(investorsData.data.slice(0, 2));
+        }
+
+      } catch (err) {
+        console.error('Error loading sidebar data:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const triggerAssistant = (suggestion) => {
     const event = new CustomEvent('trigger-founderx-assistant', { detail: { query: suggestion } });
     window.dispatchEvent(event);
   };
+
+  const demoFundingNews = [
+    { headline: 'NeuroFlow raised $50K', time: '2h ago' },
+    { headline: 'Trendly gained 1K users', time: '4h ago' },
+    { headline: '12 founders launched products today', time: '6h ago' },
+    { headline: '5 investors joined FounderX', time: '8h ago' }
+  ];
+
+  const demoAISuggestions = [
+    'Need help writing your first startup update?',
+    'Want AI to improve your pitch?',
+    'Looking for investors in your industry?'
+  ];
 
   return (
     <div className="space-y-6">
@@ -405,29 +467,43 @@ function TrendingSidebar() {
           Trending Startups
         </h3>
         <div className="space-y-4">
-          {demoTrendingStartups.map((startup, i) => {
-            const logoSrc = getSafeImageSrc(startup.logo);
-            return (
-              <div key={i} className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg overflow-hidden bg-blue-50">
-                  {logoSrc ? (
-                    <img src={logoSrc} alt={startup.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center text-primary font-bold">
-                      {startup.name.charAt(0).toUpperCase()}
+          {isLoading ? (
+            <div className="text-xs text-muted">Loading startups...</div>
+          ) : trendingStartups.length === 0 ? (
+            <div className="text-xs text-muted">No startups found.</div>
+          ) : (
+            trendingStartups.map((startup, i) => {
+              const logoSrc = getSafeImageSrc(startup.logo);
+              return (
+                <div key={i} className="flex items-center gap-3">
+                  <div 
+                    className="h-10 w-10 rounded-lg overflow-hidden bg-blue-50 cursor-pointer"
+                    onClick={() => router.push(`/startups/${startup._id}`)}
+                  >
+                    {logoSrc ? (
+                      <img src={logoSrc} alt={startup.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-primary font-bold text-sm">
+                        {getSafeInitial(startup?.name)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div 
+                      className="font-medium text-foreground cursor-pointer hover:text-primary transition truncate"
+                      onClick={() => router.push(`/startups/${startup._id}`)}
+                    >
+                      {startup.name}
                     </div>
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="font-medium text-foreground">{startup.name}</div>
-                  <div className="text-xs text-muted flex items-center gap-1">
-                    <TrendingUp className="h-3 w-3" />
-                    {startup.upvotes} upvotes
+                    <div className="text-xs text-muted flex items-center gap-1">
+                      <TrendingUp className="h-3 w-3" />
+                      {startup.followerCount || 0} followers
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -438,11 +514,24 @@ function TrendingSidebar() {
           Trending Hashtags
         </h3>
         <div className="flex flex-wrap gap-2">
-          {demoHashtags.map((tag, i) => (
-            <button key={i} className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-full hover:bg-primary/10 hover:text-primary transition">
-              {tag}
-            </button>
-          ))}
+          {isLoading ? (
+            <div className="text-xs text-muted">Loading hashtags...</div>
+          ) : trendingHashtags.length === 0 ? (
+            <div className="text-xs text-muted">No trending hashtags yet.</div>
+          ) : (
+            trendingHashtags.map((tag, i) => {
+              const cleanTag = tag._id.startsWith('#') ? tag._id.slice(1) : tag._id;
+              return (
+                <button 
+                  key={i} 
+                  onClick={() => router.push(`/hashtag/${cleanTag}`)}
+                  className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-full hover:bg-primary/10 hover:text-primary transition"
+                >
+                  #{cleanTag}
+                </button>
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -453,27 +542,48 @@ function TrendingSidebar() {
           Active Investors
         </h3>
         <div className="space-y-4">
-          {demoActiveInvestors.map((investor, i) => {
-            const avatarSrc = getSafeImageSrc(investor.avatar);
-            return (
-              <div key={i} className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full overflow-hidden relative bg-blue-50">
-                  {avatarSrc ? (
-                    <img src={avatarSrc} alt={investor.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center text-primary font-bold">
-                      {investor.name.charAt(0).toUpperCase()}
+          {isLoading ? (
+            <div className="text-xs text-muted">Loading investors...</div>
+          ) : activeInvestors.length === 0 ? (
+            <div className="text-xs text-muted">No investors found.</div>
+          ) : (
+            activeInvestors.map((investor, i) => {
+              const avatarSrc = getSafeImageSrc(investor.profileImage);
+              return (
+                <div key={i} className="flex items-center gap-3">
+                  <div 
+                    className="h-10 w-10 rounded-full overflow-hidden relative bg-blue-50 cursor-pointer"
+                    onClick={() => router.push(`/profile/${investor.username}`)}
+                  >
+                    {avatarSrc ? (
+                      <img src={avatarSrc} alt={investor.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-primary font-bold">
+                        {getSafeInitial(investor?.name)}
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-white"></div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div 
+                      className="font-medium text-foreground cursor-pointer hover:text-primary transition truncate"
+                      onClick={() => router.push(`/profile/${investor.username}`)}
+                    >
+                      {investor.name}
                     </div>
-                  )}
-                  <div className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-white"></div>
+                    <div className="text-xs text-muted truncate">
+                      {investor.headline || `@${investor.username}`}
+                    </div>
+                  </div>
+                  <FollowButton 
+                    userId={investor._id} 
+                    initialIsFollowing={user?.following?.some(id => id.toString() === investor._id?.toString()) ?? false} 
+                    className="px-3 py-1.5 text-xs font-semibold"
+                  />
                 </div>
-                <div className="flex-1">
-                  <div className="font-medium text-foreground">{investor.name}</div>
-                  <div className="text-xs text-muted">{investor.firm} · Active {investor.active}</div>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -484,29 +594,45 @@ function TrendingSidebar() {
           Suggested Founders
         </h3>
         <div className="space-y-4">
-          {demoSuggestedFounders.map((founder, i) => {
-            const avatarSrc = getSafeImageSrc(founder.avatar);
-            return (
-              <div key={i} className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full overflow-hidden bg-blue-50">
-                  {avatarSrc ? (
-                    <img src={avatarSrc} alt={founder.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="h-full w-full flex items-center justify-center text-primary font-bold">
-                      {founder.name.charAt(0).toUpperCase()}
+          {isLoading ? (
+            <div className="text-xs text-muted">Loading founders...</div>
+          ) : suggestedFounders.length === 0 ? (
+            <div className="text-xs text-muted">No founders found.</div>
+          ) : (
+            suggestedFounders.map((founder, i) => {
+              const avatarSrc = getSafeImageSrc(founder.profileImage);
+              return (
+                <div key={i} className="flex items-center gap-3">
+                  <div 
+                    className="h-10 w-10 rounded-full overflow-hidden bg-blue-50 cursor-pointer"
+                    onClick={() => router.push(`/profile/${founder.username}`)}
+                  >
+                    {avatarSrc ? (
+                      <img src={avatarSrc} alt={founder.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-primary font-bold">
+                        {getSafeInitial(founder?.name)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div 
+                      className="font-medium text-foreground cursor-pointer hover:text-primary transition truncate"
+                      onClick={() => router.push(`/profile/${founder.username}`)}
+                    >
+                      {founder.name}
                     </div>
-                  )}
+                    <div className="text-xs text-muted truncate">@{founder.username}</div>
+                  </div>
+                  <FollowButton 
+                    userId={founder._id} 
+                    initialIsFollowing={user?.following?.some(id => id.toString() === founder._id?.toString()) ?? false} 
+                    className="px-3 py-1.5 text-xs font-semibold"
+                  />
                 </div>
-                <div className="flex-1">
-                  <div className="font-medium text-foreground">{founder.name}</div>
-                  <div className="text-xs text-muted">{founder.startup}</div>
-                </div>
-                <button className="btn-primary px-3 py-1.5 text-xs">
-                  Follow
-                </button>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -566,9 +692,22 @@ export default function Feed() {
       const token = localStorage.getItem('token');
       
       let url = 'http://localhost:3000/api/posts';
-      // Watch or search filters
+      const params = new URLSearchParams();
       if (activeTab === 'videos') {
-        url += '?type=video';
+        params.append('type', 'video');
+      } else if (activeTab === 'founders') {
+        params.append('authorRole', 'founder');
+      } else if (activeTab === 'investors') {
+        params.append('authorRole', 'investor');
+      } else if (activeTab === 'startups') {
+        params.append('hasStartup', 'true');
+      } else if (activeTab === 'launches') {
+        params.append('category', 'launch');
+      }
+
+      const queryString = params.toString();
+      if (queryString) {
+        url += `?${queryString}`;
       }
       
       const headers = {};
@@ -607,8 +746,7 @@ export default function Feed() {
         {/* Feed Tabs */}
         <FeedTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
-        {/* Post Composer */}
-        <PostComposer user={user} />
+        {/* Post Composer removed */}
 
         {/* Feed Content */}
         <div className="space-y-6">

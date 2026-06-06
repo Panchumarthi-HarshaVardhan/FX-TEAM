@@ -140,7 +140,7 @@ export default function NotificationsPage() {
 
   const getLink = (notification) => {
     switch (notification.type) {
-      case 'follow': return `/profile/${notification.sender.username || notification.sender._id}`;
+      case 'follow': return `/profile/${notification.sender?.username || notification.sender?._id || ''}`;
       case 'post': 
       case 'like':
       case 'repost':
@@ -216,11 +216,11 @@ export default function NotificationsPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <img 
-                          src={notification.sender.profileImage || 'https://via.placeholder.com/40'} 
-                          alt={notification.sender.name}
+                          src={notification.sender?.profileImage || 'https://via.placeholder.com/40'} 
+                          alt={notification.sender?.name || 'Unknown User'}
                           className="w-8 h-8 rounded-full object-cover" 
                         />
-                        <span className="font-semibold text-gray-900">{notification.sender.name}</span>
+                        <span className="font-semibold text-gray-900">{notification.sender?.name || 'Unknown User'}</span>
                         <span className="text-gray-500 text-sm">
                           {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
                         </span>

@@ -133,8 +133,8 @@ async function runTests() {
     console.log(`   Success! Reply created. ID: ${replyId}`);
 
     // Verify parent post has comment count updated (or we check if it appears in thread)
-    // For now, let's check if the reply has the parentPostId set correctly
-    if (res.data.data.parentPostId !== postId) throw new Error('Reply parentPostId mismatch');
+    const returnedParentId = typeof res.data.data.parentPostId === 'object' ? res.data.data.parentPostId._id : res.data.data.parentPostId;
+    if (returnedParentId !== postId) throw new Error('Reply parentPostId mismatch');
 
     // 8. Test Notifications (as Investor)
     // Investor was mentioned in the first post "mention @investor..."

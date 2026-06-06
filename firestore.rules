@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to check if the user is the owner of the document
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Helper function to verify user role from custom claims or user profile document
+    function getUserRole(role) {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+
+    // --- Users Collection ---
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      // Users can only update their own profile document
+      allow update, delete: if isOwner(userId);
+    }
+
+    // --- Documents Collection (Metadata for RAG) ---
+    match /documents/{documentId} {
+      // Allow reading if the user owns the document or it is set to public visibility
+      allow read: if isAuthenticated() && (
+        resource.data.ownerId == request.auth.uid || 
+        resource.data.visibility == 'public'
+      );
+      
+      // Allow document creation if the user is authenticated and sets themselves as owner
+      allow create: if isAuthenticated() && request.resource.data.ownerId == request.auth.uid;
+      
+      // Allow update/delete only by the document owner
+      allow update, delete: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+    }
+
+    // --- Startups Collection ---
+    match /startups/{startupId} {
+      // Startups can be read by any authenticated member of the platform
+      allow read: if isAuthenticated();
+      
+      // Only founders can create startup records
+      allow create: if isAuthenticated() && (
+        request.resource.data.founderId == request.auth.uid ||
+        getUserRole('founder') ||
+        getUserRole('admin')
+      );
+      
+      // Only the owning founder or admin can edit or delete the startup
+      allow update, delete: if isAuthenticated() && (
+        resource.data.founderId == request.auth.uid ||
+        getUserRole('admin')
+      );
+    }
+
+    // --- Investors Collection ---
+    match /investors/{investorId} {
+      allow read: if isAuthenticated();
+      
+      // Only investors or admins can write investor profiles
+      allow create: if isAuthenticated() && (
+        request.resource.data.userId == request.auth.uid ||
+        getUserRole('investor') ||
+        getUserRole('admin')
+      );
+      
+      allow update, delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        getUserRole('admin')
+      );
+    }
+
+    // --- AI Chats Collection (RAG Chat sessions) ---
+    match /aiChats/{chatId} {
+      // Chat histories are strictly private to the user session
+      allow read, write: if isAuthenticated() && (
+        resource == null || resource.data.userId == request.auth.uid
+      ) && (
+        request.resource == null || request.resource.data.userId == request.auth.uid
+      );
+    }
+
+    // --- Connections Collection (Venture matching / Founder-Investor connections) ---
+    match /connections/{connectionId} {
+      // Only participating users (founder, investor, or admin) can view the connection status
+      allow read: if isAuthenticated() && (
+        resource.data.founderId == request.auth.uid || 
+        resource.data.investorId == request.auth.uid ||
+        getUserRole('admin')
+      );
+
+      // Authenticated users can create connection requests
+      allow create: if isAuthenticated() && (
+        request.resource.data.founderId == request.auth.uid ||
+        request.resource.data.investorId == request.auth.uid
+      );
+
+      // Only the participants can update (e.g. approve connection) or delete
+      allow update, delete: if isAuthenticated() && (
+        resource.data.founderId == request.auth.uid || 
+        resource.data.investorId == request.auth.uid ||
+        getUserRole('admin')
+      );
+    }
+  }
+}

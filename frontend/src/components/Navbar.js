@@ -20,8 +20,15 @@ export default function Navbar({ dark = false }) {
   const dropdownRef = useRef(null);
   const createDropdownRef = useRef(null);
   const { user, loading, logout, token } = useAuth();
+
+  const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-compiler/react-compiler
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const showInvestorsNav =
-    user?.role === "founder" || user?.role === "admin";
+    mounted && (user?.role === "founder" || user?.role === "admin");
   const { socket } = useSocket();
   const { isDark, toggleTheme } = useTheme();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -330,7 +337,7 @@ export default function Navbar({ dark = false }) {
 
           {/* Right Actions */}
           <div className="hidden md:flex md:items-center md:space-x-4 ml-auto">
-            {!loading && user ? (
+            {mounted && !loading && user ? (
               <>
                 {/* Create Dropdown */}
                 <div className="relative mr-2" ref={createDropdownRef}>
@@ -510,7 +517,7 @@ export default function Navbar({ dark = false }) {
             <Link href="/dashboard" className={getMobileLinkClass('/dashboard')}>
               Dashboard
             </Link>
-            {!loading && user ? (
+            {mounted && !loading && user ? (
               <>
                 <div className={dropdownDividerClass + " my-2 pt-2"}>
                   <div className="flex items-center px-3 mb-3">

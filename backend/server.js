@@ -29,6 +29,10 @@ const teamInvitationRoutes = require('./routes/teamInvitations');
 const adminRoutes = require('./routes/admin');
 const mailRoutes = require('./routes/mail');
 const settingsRoutes = require('./routes/settings');
+const ragRoutes = require('./routes/ragRoutes');
+
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 
 // Import Models for Socket Logic
@@ -180,6 +184,10 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 5000;
 
 // Middleware
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 app.use(express.json());
@@ -258,9 +266,36 @@ app.use('/api/user', require('./routes/jobSeeker'));
 app.use('/api/founder', require('./routes/founder'));
 app.use('/api/settings', settingsRoutes);
 
+const ragRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 mins
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: {
+    success: false,
+    error: 'Too Many Requests',
+    message: 'Too many RAG queries. Please try again after 15 minutes.'
+  }
+});
+app.use('/api/rag', ragRateLimiter, ragRoutes);
+
 // Error Handling Middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
+
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({
+      success: false,
+      error: 'Validation Error',
+      message: 'File size exceeds the maximum limit of 50MB.'
+    });
+  }
+  if (err.name === 'MulterError') {
+    return res.status(400).json({
+      success: false,
+      error: 'Upload Error',
+      message: err.message
+    });
+  }
+
   res.status(500).json({ 
     success: false, 
     error: 'Server Error', 
