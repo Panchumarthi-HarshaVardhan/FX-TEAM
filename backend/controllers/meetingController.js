@@ -1,7 +1,7 @@
 const Meeting = require('../models/Meeting');
 const Mail = require('../models/Mail');
 const User = require('../models/User');
-const mongoose = require('mongoose');
+const { mongooseCompat: mongoose } = require('../utils/firebaseModel');
 
 // Generate random meeting code: abc-defg-hij
 const generateMeetingCode = () => {

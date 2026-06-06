@@ -12,7 +12,7 @@ class RAGController {
     try {
       const file = req.file;
       const { startupId, sourceType, visibility } = req.body;
-      const ownerId = req.user._id;
+      const ownerId = req.user ? (req.user._id || req.user.id) : 'guest';
 
       const host = req.get('host');
       const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http';
@@ -89,7 +89,7 @@ class RAGController {
   async semanticSearch(req, res) {
     try {
       const { query, limit, sourceType, startupId } = req.body;
-      const userId = req.user._id;
+      const userId = req.user ? (req.user._id || req.user.id) : 'guest';
 
       if (!query || typeof query !== 'string') {
         return res.status(400).json({ success: false, error: 'Bad Request', message: 'Query string is required.' });
@@ -126,7 +126,7 @@ class RAGController {
   async chat(req, res) {
     try {
       const { query, startupId, stream } = req.body;
-      const userId = req.user._id;
+      const userId = req.user ? (req.user._id || req.user.id) : 'guest';
 
       if (!query || typeof query !== 'string') {
         return res.status(400).json({ success: false, error: 'Bad Request', message: 'Query string is required.' });

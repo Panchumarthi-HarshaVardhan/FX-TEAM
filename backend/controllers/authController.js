@@ -1,5 +1,6 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const axios = require('axios');
 const { OAuth2Client } = require('google-auth-library');
 const sendEmail = require('../utils/mailer');
 const {
@@ -96,7 +97,7 @@ exports.register = async (req, res) => {
       isVerified: false,
       isEmailVerified: false,
       emailVerificationOtp: otp,
-      emailVerificationExpires: Date.now() + 15 * 60 * 1000,
+      emailVerificationExpires: Date.now() + 24 * 60 * 60 * 1000, // 24 hours
       createdAt: Date.now()
     };
 
@@ -104,7 +105,7 @@ exports.register = async (req, res) => {
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaec; border-radius: 10px;">
         <h2 style="color: #333;">Welcome to FounderX!</h2>
-        <p style="color: #555; font-size: 16px;">Please use the following OTP to verify your email address. This OTP is valid for 15 minutes.</p>
+        <p style="color: #555; font-size: 16px;">Please use the following OTP to verify your email address. This OTP is valid for 24 hours.</p>
         <div style="background: #f4f4f4; padding: 15px; text-align: center; border-radius: 5px; margin: 20px 0;">
           <span style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #007bff;">${otp}</span>
         </div>
@@ -161,17 +162,34 @@ exports.login = async (req, res) => {
       return res.status(403).json({ message: 'Please verify your email address to log in.' });
     }
 
-    const token = generateToken(user.id);
-    const userPublic = toPublicUser(user);
-    userPublic.token = token;
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    await updateById('users', user.id, {
+      loginOtp: otp,
+      loginOtpExpires: Date.now() + 60 * 60 * 1000 // 1 hour
+    });
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-      path: '/'
-    }).json(userPublic);
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaec; border-radius: 10px;">
+        <h2 style="color: #333;">Login OTP Verification</h2>
+        <p style="color: #555; font-size: 16px;">Please use the following OTP to complete your login. This OTP is valid for 60 minutes.</p>
+        <div style="background: #f4f4f4; padding: 15px; text-align: center; border-radius: 5px; margin: 20px 0;">
+          <span style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #007bff;">${otp}</span>
+        </div>
+        <p style="color: #999; font-size: 14px;">If you didn't request this, please secure your account immediately.</p>
+      </div>
+    `;
+
+    await sendEmail({
+      email: user.email,
+      subject: 'Your Login OTP - FounderX',
+      html: emailHtml
+    });
+
+    console.log('-------------------------------------------');
+    console.log('LOGIN OTP for', user.email, ':', otp);
+    console.log('-------------------------------------------');
+
+    res.status(200).json({ requireOtp: true, email: user.email, message: 'OTP sent to email' });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: error.message || 'Server Error' });
@@ -250,7 +268,7 @@ exports.sendVerificationEmail = async (req, res) => {
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await updateById('users', user.id, {
       emailVerificationOtp: otp,
-      emailVerificationExpires: Date.now() + 15 * 60 * 1000
+      emailVerificationExpires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
     });
 
     await sendEmail({
@@ -268,16 +286,16 @@ exports.sendVerificationEmail = async (req, res) => {
 
 exports.googleAuth = async (req, res) => {
   try {
-    const { token } = req.body;
+    const { token, role } = req.body;
     if (!token) {
       return res.status(400).json({ message: 'Google token is required' });
     }
 
-    const ticket = await googleClient.verifyIdToken({
-      idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID
+    // Call Google's userinfo API using the access token
+    const response = await axios.get('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${token}` }
     });
-    const payload = ticket.getPayload();
+    const payload = response.data;
     if (!payload || !payload.email) {
       return res.status(400).json({ message: 'Invalid Google token' });
     }
@@ -292,32 +310,86 @@ exports.googleAuth = async (req, res) => {
         name: payload.name || usernameValue,
         email,
         username: usernameValue,
-        role: 'user',
+        role: normalizeRole(role),
         googleId: payload.sub,
+        profileImage: payload.picture || null,
         isEmailVerified: true,
         isActive: true,
         isVerified: false,
         createdAt: Date.now()
       });
-    } else if (!user.googleId) {
-      await updateById('users', user.id, { googleId: payload.sub, isEmailVerified: true });
-      user.googleId = payload.sub;
-      user.isEmailVerified = true;
+    } else {
+      const updates = { isEmailVerified: true };
+      let changed = false;
+      if (!user.googleId) {
+        updates.googleId = payload.sub;
+        changed = true;
+      }
+      if (payload.picture && user.profileImage !== payload.picture) {
+        updates.profileImage = payload.picture;
+        changed = true;
+      }
+      if (changed || !user.isEmailVerified) {
+        await updateById('users', user.id, updates);
+        user = { ...user, ...updates };
+      }
     }
 
-    const tokenValue = generateToken(user.id);
+    const jwtToken = generateToken(user.id);
     const userPublic = toPublicUser(user);
-    userPublic.token = tokenValue;
+    userPublic.token = jwtToken;
 
-    res.cookie('token', tokenValue, {
+    res.cookie('token', jwtToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 30 * 24 * 60 * 60 * 1000,
       path: '/'
-    }).json(userPublic);
+    }).status(200).json(userPublic);
   } catch (error) {
     console.error('Google auth error:', error);
     res.status(500).json({ message: error.message || 'Server Error' });
+  }
+};
+
+exports.verifyLoginOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+
+    const user = await findOne('users', (item) => {
+      return item.email === email.trim().toLowerCase() &&
+        item.loginOtp === otp &&
+        item.loginOtpExpires > Date.now();
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    // Clear OTP fields
+    await updateById('users', user.id, {
+      loginOtp: null,
+      loginOtpExpires: null
+    });
+
+    // Generate JWT and log user in
+    const token = generateToken(user.id);
+    const userPublic = toPublicUser({ ...user, loginOtp: null, loginOtpExpires: null });
+    userPublic.token = token;
+
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      path: '/'
+    }).status(200).json(userPublic);
+  } catch (error) {
+    console.error('Login OTP verification error:', error);
+    res.status(500).json({ message: 'Server error during OTP verification' });
   }
 };

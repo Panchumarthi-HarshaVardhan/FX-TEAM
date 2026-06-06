@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const ragController = require('../controllers/ragController');
-const { protect } = require('../middleware/auth');
+const { protect, optionalProtect } = require('../middleware/auth');
 const uploadValidation = require('../middleware/uploadValidation');
 const ragSecurity = require('../middleware/ragSecurity');
 
@@ -17,7 +17,7 @@ const upload = multer({
 // POST /api/rag/upload
 router.post(
   '/upload',
-  protect,
+  optionalProtect,
   upload.single('file'),
   uploadValidation,
   ragController.uploadDocument
@@ -26,7 +26,7 @@ router.post(
 // POST /api/rag/chat
 router.post(
   '/chat',
-  protect,
+  optionalProtect,
   ragSecurity.validateRAGRequest,
   ragController.chat
 );
@@ -34,7 +34,7 @@ router.post(
 // POST /api/rag/search
 router.post(
   '/search',
-  protect,
+  optionalProtect,
   ragSecurity.validateRAGRequest,
   ragController.semanticSearch
 );

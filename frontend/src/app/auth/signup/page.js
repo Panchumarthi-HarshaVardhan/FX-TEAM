@@ -26,9 +26,9 @@ export default function SignupPage() {
     setIsGoogleLoading(true);
     setError('');
     const res = await googleLogin(tokenResponse.access_token, formData.role);
+    setIsGoogleLoading(false);
     if (!res.success) {
       setError(res.error);
-      setIsGoogleLoading(false);
     }
   };
 

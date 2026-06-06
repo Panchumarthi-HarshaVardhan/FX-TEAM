@@ -47,6 +47,18 @@ const COLLECTIONS = {
 
 const toStr = (v) => (v == null ? '' : v.toString());
 
+const removeUndefined = (obj) => {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(removeUndefined);
+  const cleaned = {};
+  Object.entries(obj).forEach(([k, v]) => {
+    if (v !== undefined) {
+      cleaned[k] = (v && typeof v === 'object') ? removeUndefined(v) : v;
+    }
+  });
+  return cleaned;
+};
+
 const matchQuery = (doc, query) => {
   if (!query || Object.keys(query).length === 0) return true;
   return Object.entries(query).every(([key, val]) => {
@@ -114,6 +126,10 @@ class FirebaseDocument {
     this._isNew = !data.id && !data._id;
     Object.assign(this, data);
     this._id = data.id || data._id;
+    if (!this._id && this._isNew) {
+      const newRef = db.ref(collection).push();
+      this._id = newRef.key;
+    }
     this.id = this._id;
     this._doc = { ...data, _id: this._id, id: this._id };
     this.likes = this.likes || [];
@@ -137,7 +153,7 @@ class FirebaseDocument {
 
   async save() {
     const { _collection, _id, _isNew, _modelName, _doc, ...rest } = this;
-    const payload = { ...rest };
+    const payload = removeUndefined({ ...rest });
     delete payload._collection;
     delete payload._modelName;
     delete payload._isNew;
@@ -146,13 +162,11 @@ class FirebaseDocument {
       payload.unreadCount = Object.fromEntries(payload.unreadCount);
     }
 
-    if (_isNew || !_id) {
-      const created = await create(_collection, payload);
-      Object.assign(this, created);
-      this._id = created.id;
-      this.id = created.id;
+    if (_isNew) {
+      const timestamped = { ...payload, createdAt: payload.createdAt || Date.now() };
+      await db.ref(`${_collection}/${_id}`).set(timestamped);
       this._isNew = false;
-      this._doc = { ...created, _id: created.id };
+      this._doc = { ...timestamped, _id, id: _id };
       attachMethods(this);
       return this;
     }
@@ -494,147 +508,149 @@ const createModel = (modelName) => {
   const collection = COLLECTIONS[modelName];
   if (!collection) throw new Error(`Unknown model: ${modelName}`);
 
-  const Model = {
-    collection,
-    modelName,
+  function ModelConstructor(data) {
+    return new FirebaseDocument(collection, data || {}, modelName);
+  }
 
-    find(query = {}) {
-      return new Query(collection, modelName, query);
-    },
+  ModelConstructor.collection = collection;
+  ModelConstructor.modelName = modelName;
 
-    findOne(query = {}) {
-      return new Query(collection, modelName, query).limit(1)._execute().then((r) => r[0] || null);
-    },
-
-    async findById(id) {
-      if (!id) return null;
-      const data = await getById(collection, toStr(id));
-      return data ? new FirebaseDocument(collection, data, modelName) : null;
-    },
-
-    async create(data) {
-      const created = await create(collection, data);
-      return new FirebaseDocument(collection, created, modelName);
-    },
-
-    async countDocuments(query = {}) {
-      const items = await getAll(collection);
-      return items.filter((doc) => matchQuery(doc, query)).length;
-    },
-
-    async findByIdAndUpdate(id, update, opts = {}) {
-      const existing = await getById(collection, toStr(id));
-      if (!existing) return null;
-      const merged = applyUpdate({ ...existing }, update);
-      const updated = await updateById(collection, toStr(id), merged);
-      const doc = new FirebaseDocument(collection, updated, modelName);
-      return opts.new !== false ? doc : existing;
-    },
-
-    async findOneAndUpdate(query, update, opts = {}) {
-      const items = await getAll(collection);
-      const found = items.find((doc) => matchQuery(doc, query));
-      if (!found) return null;
-      const merged = applyUpdate({ ...found }, update);
-      const updated = await updateById(collection, found.id, merged);
-      return new FirebaseDocument(collection, updated, modelName);
-    },
-
-    async findOneAndDelete(query) {
-      const items = await getAll(collection);
-      const found = items.find((doc) => matchQuery(doc, query));
-      if (!found) return null;
-      await deleteById(collection, found.id);
-      return new FirebaseDocument(collection, found, modelName);
-    },
-
-    async deleteOne(query) {
-      const items = await getAll(collection);
-      const found = items.find((doc) => matchQuery(doc, query));
-      if (!found) return { deletedCount: 0 };
-      await deleteById(collection, found.id);
-      return { deletedCount: 1 };
-    },
-
-    async updateMany(query, update) {
-      const items = await getAll(collection);
-      const matched = items.filter((doc) => matchQuery(doc, query));
-      await Promise.all(matched.map((doc) => updateById(collection, doc.id, applyUpdate({ ...doc }, update))));
-      return { modifiedCount: matched.length };
-    },
-
-    async exists(query) {
-      const items = await getAll(collection);
-      return items.some((doc) => matchQuery(doc, query));
-    },
-
-    async distinct(field, query = {}) {
-      const items = await getAll(collection);
-      const values = new Set();
-      items.filter((doc) => matchQuery(doc, query)).forEach((doc) => {
-        if (doc[field] !== undefined) values.add(doc[field]);
-      });
-      return Array.from(values);
-    },
-
-    aggregate() {
-      return {
-        _pipeline: [],
-        match(q) {
-          this._pipeline.push({ $match: q });
-          return this;
-        },
-        unwind(f) {
-          this._pipeline.push({ $unwind: f });
-          return this;
-        },
-        group(g) {
-          this._pipeline.push({ $group: g });
-          return this;
-        },
-        sort(s) {
-          this._pipeline.push({ $sort: s });
-          return this;
-        },
-        limit(n) {
-          this._pipeline.push({ $limit: n });
-          return this;
-        },
-        async exec() {
-          let items = await getAll(collection);
-          for (const stage of this._pipeline) {
-            if (stage.$match) items = items.filter((d) => matchQuery(d, stage.$match));
-            if (stage.$unwind) {
-              const field = stage.$unwind.replace('$', '');
-              const next = [];
-              items.forEach((d) => {
-                (d[field] || []).forEach((v) => next.push({ ...d, [field]: v }));
-              });
-              items = next;
-            }
-            if (stage.$group) {
-              const groups = {};
-              items.forEach((d) => {
-                const key = d[stage.$group._id?.replace('$', '') || '_id'];
-                if (!groups[key]) groups[key] = { _id: key, count: 0 };
-                groups[key].count += 1;
-              });
-              items = Object.values(groups);
-            }
-            if (stage.$sort) {
-              const key = Object.keys(stage.$sort)[0];
-              const desc = stage.$sort[key] === -1;
-              items.sort((a, b) => (desc ? b[key] - a[key] : a[key] - b[key]));
-            }
-            if (stage.$limit) items = items.slice(0, stage.$limit);
-          }
-          return items;
-        }
-      };
-    }
+  ModelConstructor.find = function (query = {}) {
+    return new Query(collection, modelName, query);
   };
 
-  return Model;
+  ModelConstructor.findOne = function (query = {}) {
+    return new Query(collection, modelName, query).limit(1)._execute().then((r) => r[0] || null);
+  };
+
+  ModelConstructor.findById = async function (id) {
+    if (!id) return null;
+    const data = await getById(collection, toStr(id));
+    return data ? new FirebaseDocument(collection, data, modelName) : null;
+  };
+
+  ModelConstructor.create = async function (data) {
+    const created = await create(collection, data);
+    return new FirebaseDocument(collection, created, modelName);
+  };
+
+  ModelConstructor.countDocuments = async function (query = {}) {
+    const items = await getAll(collection);
+    return items.filter((doc) => matchQuery(doc, query)).length;
+  };
+
+  ModelConstructor.findByIdAndUpdate = async function (id, update, opts = {}) {
+    const existing = await getById(collection, toStr(id));
+    if (!existing) return null;
+    const merged = applyUpdate({ ...existing }, update);
+    const updated = await updateById(collection, toStr(id), merged);
+    const doc = new FirebaseDocument(collection, updated, modelName);
+    return opts.new !== false ? doc : existing;
+  };
+
+  ModelConstructor.findOneAndUpdate = async function (query, update, opts = {}) {
+    const items = await getAll(collection);
+    const found = items.find((doc) => matchQuery(doc, query));
+    if (!found) return null;
+    const merged = applyUpdate({ ...found }, update);
+    const updated = await updateById(collection, found.id, merged);
+    return new FirebaseDocument(collection, updated, modelName);
+  };
+
+  ModelConstructor.findOneAndDelete = async function (query) {
+    const items = await getAll(collection);
+    const found = items.find((doc) => matchQuery(doc, query));
+    if (!found) return null;
+    await deleteById(collection, found.id);
+    return new FirebaseDocument(collection, found, modelName);
+  };
+
+  ModelConstructor.deleteOne = async function (query) {
+    const items = await getAll(collection);
+    const found = items.find((doc) => matchQuery(doc, query));
+    if (!found) return { deletedCount: 0 };
+    await deleteById(collection, found.id);
+    return { deletedCount: 1 };
+  };
+
+  ModelConstructor.updateMany = async function (query, update) {
+    const items = await getAll(collection);
+    const matched = items.filter((doc) => matchQuery(doc, query));
+    await Promise.all(matched.map((doc) => updateById(collection, doc.id, applyUpdate({ ...doc }, update))));
+    return { modifiedCount: matched.length };
+  };
+
+  ModelConstructor.exists = async function (query) {
+    const items = await getAll(collection);
+    return items.some((doc) => matchQuery(doc, query));
+  };
+
+  ModelConstructor.distinct = async function (field, query = {}) {
+    const items = await getAll(collection);
+    const values = new Set();
+    items.filter((doc) => matchQuery(doc, query)).forEach((doc) => {
+      if (doc[field] !== undefined) values.add(doc[field]);
+    });
+    return Array.from(values);
+  };
+
+  ModelConstructor.aggregate = function () {
+    return {
+      _pipeline: [],
+      match(q) {
+        this._pipeline.push({ $match: q });
+        return this;
+      },
+      unwind(f) {
+        this._pipeline.push({ $unwind: f });
+        return this;
+      },
+      group(g) {
+        this._pipeline.push({ $group: g });
+        return this;
+      },
+      sort(s) {
+        this._pipeline.push({ $sort: s });
+        return this;
+      },
+      limit(n) {
+        this._pipeline.push({ $limit: n });
+        return this;
+      },
+      async exec() {
+        let items = await getAll(collection);
+        for (const stage of this._pipeline) {
+          if (stage.$match) items = items.filter((d) => matchQuery(d, stage.$match));
+          if (stage.$unwind) {
+            const field = stage.$unwind.replace('$', '');
+            const next = [];
+            items.forEach((d) => {
+              (d[field] || []).forEach((v) => next.push({ ...d, [field]: v }));
+            });
+            items = next;
+          }
+          if (stage.$group) {
+            const groups = {};
+            items.forEach((d) => {
+              const key = d[stage.$group._id?.replace('$', '') || '_id'];
+              if (!groups[key]) groups[key] = { _id: key, count: 0 };
+              groups[key].count += 1;
+            });
+            items = Object.values(groups);
+          }
+          if (stage.$sort) {
+            const key = Object.keys(stage.$sort)[0];
+            const desc = stage.$sort[key] === -1;
+            items.sort((a, b) => (desc ? b[key] - a[key] : a[key] - b[key]));
+          }
+          if (stage.$limit) items = items.slice(0, stage.$limit);
+        }
+        return items;
+      }
+    };
+  };
+
+  return ModelConstructor;
 };
 
 const models = {};
@@ -649,6 +665,14 @@ const mongooseCompat = {
         return typeof id === 'string' && id.length > 0;
       }
     }
+  },
+  isValidObjectId(id) {
+    return typeof id === 'string' && id.length > 0;
+  },
+  model(name) {
+    const Model = models[name];
+    if (!Model) throw new Error(`Model ${name} not found in mongooseCompat`);
+    return Model;
   },
   connect: async () => ({ connection: { host: 'firebase' } }),
   connection: { close: async () => {} }

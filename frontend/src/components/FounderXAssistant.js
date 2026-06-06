@@ -2274,9 +2274,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
               />
             )}
             <motion.div
-              drag={!isFullScreen}
-              dragMomentum={false}
-              dragElastic={0.1}
+              drag={false}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -3839,17 +3837,13 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
       {/* FLOATING ACTION TRIGGER */}
       {!(isFullScreen && isOpen) && (
         <motion.div
-          drag={true}
-          dragMomentum={false}
-          dragElastic={0.1}
-          onDragStart={handleLogoDragStart}
-          onDragEnd={handleLogoDragEnd}
+          drag={false}
           style={{
             position: 'fixed',
-            left: logoPosition.x,
-            top: logoPosition.y,
+            right: '24px',
+            bottom: '24px',
             zIndex: 50,
-            cursor: isDraggingLogo ? 'grabbing' : 'grab'
+            cursor: 'pointer'
           }}
         >
           <motion.button

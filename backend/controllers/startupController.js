@@ -1,4 +1,4 @@
-﻿const Startup = require('../models/Startup');
+const Startup = require('../models/Startup');
 const Post = require('../models/Post');
 const Application = require('../models/Application');
 const InvestmentRequest = require('../models/InvestmentRequest');
@@ -274,7 +274,7 @@ exports.getStartups = async (req, res) => {
       const searchRegex = { $regex: req.query.search, $options: 'i' };
       
       // Find matching users for founder name search
-      const matchingUsers = await mongoose.model('User').find({
+      const matchingUsers = await User.find({
         name: searchRegex
       }).select('_id');
       const matchingUserIds = matchingUsers.map(u => u._id);
