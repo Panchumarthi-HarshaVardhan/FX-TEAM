@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -11,7 +12,7 @@ export default function TrendingSidebar() {
   useEffect(() => {
     const fetchTrends = async () => {
       try {
-        const res = await fetch('http://localhost:3000/api/posts/trending');
+        const res = await fetch(`${API_URL}/api/posts/trending`);
         
         const contentType = res.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {

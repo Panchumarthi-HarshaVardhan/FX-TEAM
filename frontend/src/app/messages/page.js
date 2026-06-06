@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -7,6 +8,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import { Loader, User, MessageSquare } from 'lucide-react';
 import ChatList from '../../components/messages/ChatList';
+import ScheduleMeetingModal from '../../components/messages/ScheduleMeetingModal';
+import { API_URL } from '@/utils/api';
 import dynamic from 'next/dynamic';
 
 const ChatWindow = dynamic(() => import('../../components/messages/ChatWindow'), { 
@@ -27,6 +30,10 @@ function MessagesPageContent() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   
+  const [meetings, setMeetings] = useState([]);
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+  const [meetingModalParticipant, setMeetingModalParticipant] = useState(null);
+
   const targetUserId = searchParams.get('userId');
 
   // Redirect if not authenticated
@@ -40,10 +47,12 @@ function MessagesPageContent() {
   useEffect(() => {
     if (user && token) {
         fetchConversations();
+        fetchMeetings();
     } else {
         setConversations([]);
         setActiveConversation(null);
         setMessages([]);
+        setMeetings([]);
     }
   }, [user, token]);
 
@@ -80,7 +89,7 @@ function MessagesPageContent() {
           
           // Better approach: Create a temporary conversation object for the UI
           // fetch user details first
-          const res = await fetch(`http://localhost:3000/api/users/${recipientId}`, {
+          const res = await fetch(`${API_URL}/api/users/${recipientId}`, {
              headers: { Authorization: `Bearer ${token}` }
           });
           const data = await res.json();
@@ -251,7 +260,7 @@ function MessagesPageContent() {
         // which usually marks all as read up to now.
         // For now, using the general 'read' endpoint which marks all unread as seen.
         
-        await fetch(`http://localhost:3000/api/messages/${convId}/read`, {
+        await fetch(`${API_URL}/api/messages/${convId}/read`, {
             method: 'PUT',
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -270,7 +279,7 @@ function MessagesPageContent() {
   const handleEditMessage = async (messageId, newContent) => {
       try {
           if (!token) return;
-          const res = await fetch(`http://localhost:3000/api/message/${messageId}`, {
+          const res = await fetch(`${API_URL}/api/message/${messageId}`, {
               method: 'PUT',
               headers: {
                   'Content-Type': 'application/json',
@@ -299,7 +308,7 @@ function MessagesPageContent() {
        
        try {
            if (!token) return;
-           const res = await fetch(`http://localhost:3000/api/message/${messageId}?deleteForEveryone=true`, {
+           const res = await fetch(`${API_URL}/api/message/${messageId}?deleteForEveryone=true`, {
                method: 'DELETE',
                headers: { Authorization: `Bearer ${token}` }
            });
@@ -322,7 +331,7 @@ function MessagesPageContent() {
 
     try {
         if (!token) return;
-        const res = await fetch(`http://localhost:3000/api/users/block/${userId}`, {
+        const res = await fetch(`${API_URL}/api/users/block/${userId}`, {
             method: 'POST',
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -358,7 +367,7 @@ function MessagesPageContent() {
   const fetchConversations = async () => {
     try {
       if (!token) return;
-      const res = await fetch('http://localhost:3000/api/messages/conversations', {
+      const res = await fetch(`${API_URL}/api/messages/conversations`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -376,11 +385,29 @@ function MessagesPageContent() {
     }
   };
 
+  const fetchMeetings = async () => {
+    try {
+      if (!token) return;
+      const res = await fetch(`${API_URL}/api/meetings`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data = await res.json();
+        if (data.success) {
+          setMeetings(data.data);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const fetchMessages = async (convId) => {
     setLoadingMessages(true);
     try {
       if (!token) return;
-      const res = await fetch(`http://localhost:3000/api/messages/${convId}`, {
+      const res = await fetch(`${API_URL}/api/messages/${convId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -414,7 +441,7 @@ function MessagesPageContent() {
         payload.replyTo = replyToId;
       }
 
-      const res = await fetch('http://localhost:3000/api/messages', {
+      const res = await fetch(`${API_URL}/api/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -466,7 +493,7 @@ function MessagesPageContent() {
     try {
         if (!token) return;
         // Correct endpoint: /api/messages/:id/accept
-        const res = await fetch(`http://localhost:3000/api/messages/${convId}/accept`, {
+        const res = await fetch(`${API_URL}/api/messages/${convId}/accept`, {
             method: 'PUT',
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -491,7 +518,7 @@ function MessagesPageContent() {
     try {
         if (!token) return;
         // Correct endpoint: /api/messages/:id/decline
-        const res = await fetch(`http://localhost:3000/api/messages/${convId}/decline`, {
+        const res = await fetch(`${API_URL}/api/messages/${convId}/decline`, {
             method: 'PUT',
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -548,6 +575,11 @@ function MessagesPageContent() {
             activeConversation={activeConversation} 
             setActiveConversation={setActiveConversation} 
             currentUser={user}
+            meetings={meetings}
+            onOpenScheduleModal={(participant = null) => {
+              setMeetingModalParticipant(participant);
+              setIsMeetingModalOpen(true);
+            }}
         />
 
         {/* Right Panel: Chat Window */}
@@ -556,6 +588,7 @@ function MessagesPageContent() {
                 conversation={activeConversation}
                 currentUser={user}
                 messages={messages}
+                meetings={meetings}
                 onSendMessage={handleSendMessage}
                 onEditMessage={handleEditMessage}
                 onDeleteMessage={handleDeleteMessage}
@@ -565,6 +598,10 @@ function MessagesPageContent() {
                 loadingMessages={loadingMessages}
                 onTyping={handleTyping}
                 isOtherTyping={isOtherTyping}
+                onOpenScheduleModal={(participant) => {
+                  setMeetingModalParticipant(participant);
+                  setIsMeetingModalOpen(true);
+                }}
             />
         ) : (
             <div className="w-2/3 bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col items-center justify-center text-gray-400 h-full">
@@ -578,6 +615,22 @@ function MessagesPageContent() {
             </div>
         )}
       </div>
+
+      <ScheduleMeetingModal 
+        isOpen={isMeetingModalOpen}
+        onClose={() => setIsMeetingModalOpen(false)}
+        initialParticipant={meetingModalParticipant}
+        connectedUsers={conversations
+          .filter(c => c.status === 'accepted' && c.type !== 'group')
+          .map(c => c.participants.find(p => p._id !== user._id))
+          .filter(Boolean)
+        }
+        onMeetingCreated={(newMeeting) => {
+          setMeetings(prev => [...prev, newMeeting]);
+          console.log("Redirecting to:", newMeeting.roomId || newMeeting.meetingCode);
+          router.push(`/meet/${newMeeting.roomId}`);
+        }}
+      />
     </div>
   );
 }

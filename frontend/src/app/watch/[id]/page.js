@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState, useEffect } from 'react';
 import Navbar from '../../../components/Navbar';
@@ -32,7 +33,7 @@ export default function VideoPlayerPage() {
     try {
       setLoading(true);
       // Fetch current video
-      const res = await fetch(`http://localhost:3000/api/posts/${params.id}`, {
+      const res = await fetch(`${API_URL}/api/posts/${params.id}`, {
         headers: {
           Authorization: localStorage.getItem('token')
             ? `Bearer ${localStorage.getItem('token')}`
@@ -55,7 +56,7 @@ export default function VideoPlayerPage() {
       }
 
       // Fetch related videos (mocked by fetching latest videos for now)
-      const relatedRes = await fetch('http://localhost:3000/api/posts?type=video&limit=10');
+      const relatedRes = await fetch(`${API_URL}/api/posts?type=video&limit=10`);
       const relatedContentType = relatedRes.headers.get('content-type');
       if (relatedContentType && relatedContentType.includes('application/json')) {
         const relatedData = await relatedRes.json();
@@ -82,7 +83,7 @@ export default function VideoPlayerPage() {
         return;
       }
 
-      const res = await fetch('http://localhost:3000/api/posts', {
+      const res = await fetch(`${API_URL}/api/posts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -121,7 +122,7 @@ export default function VideoPlayerPage() {
         return;
       }
 
-      const res = await fetch(`http://localhost:3000/api/posts/${post._id}/like`, {
+      const res = await fetch(`${API_URL}/api/posts/${post._id}/like`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -163,7 +164,7 @@ export default function VideoPlayerPage() {
         return;
       }
 
-      const res = await fetch(`http://localhost:3000/api/posts/${post._id}/save`, {
+      const res = await fetch(`${API_URL}/api/posts/${post._id}/save`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });

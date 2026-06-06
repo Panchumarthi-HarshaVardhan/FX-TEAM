@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -146,7 +147,7 @@ export default function PostCard({ post: initialPost, darkTheme = false, refresh
       const token = localStorage.getItem('token');
       if (!token) return; 
 
-      const res = await fetch(`http://localhost:3000/api/posts/${post._id}/like`, {
+      const res = await fetch(`${API_URL}/api/posts/${post._id}/like`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -183,7 +184,7 @@ export default function PostCard({ post: initialPost, darkTheme = false, refresh
         quoteBody: withQuote ? quoteBody : undefined
       };
 
-      const res = await fetch(`http://localhost:3000/api/posts`, {
+      const res = await fetch(`${API_URL}/api/posts`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -217,7 +218,7 @@ export default function PostCard({ post: initialPost, darkTheme = false, refresh
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
-      const res = await fetch(`http://localhost:3000/api/posts/${post._id}/save`, {
+      const res = await fetch(`${API_URL}/api/posts/${post._id}/save`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -247,7 +248,7 @@ export default function PostCard({ post: initialPost, darkTheme = false, refresh
       const token = localStorage.getItem('token');
       if (!token) return;
       
-      const res = await fetch(`http://localhost:3000/api/users/pin/${post._id}`, {
+      const res = await fetch(`${API_URL}/api/users/pin/${post._id}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -270,7 +271,7 @@ export default function PostCard({ post: initialPost, darkTheme = false, refresh
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const res = await fetch(`http://localhost:3000/api/posts/${post._id}/react`, {
+      const res = await fetch(`${API_URL}/api/posts/${post._id}/react`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -561,19 +562,19 @@ export default function PostCard({ post: initialPost, darkTheme = false, refresh
                   onClick={() => handleInvestorReact('interested')}
                   className="w-full text-left px-3 py-2 hover:bg-green-50 text-sm rounded text-gray-700 font-medium"
                 >
-                  👋 Interested
+                   Interested
                 </button>
                 <button 
                   onClick={() => handleInvestorReact('want_to_invest')}
                   className="w-full text-left px-3 py-2 hover:bg-green-50 text-sm rounded text-gray-700 font-medium"
                 >
-                  💰 Want to Invest
+                   Want to Invest
                 </button>
                 <button 
                   onClick={() => handleInvestorReact('request_deck')}
                   className="w-full text-left px-3 py-2 hover:bg-green-50 text-sm rounded text-gray-700 font-medium"
                 >
-                  📊 Request Deck
+                   Request Deck
                 </button>
               </div>
             )}

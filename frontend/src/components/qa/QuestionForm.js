@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState } from 'react';
 import { Send, Lock, User as UserIcon } from 'lucide-react';
@@ -31,7 +32,7 @@ export default function QuestionForm({ targetId, targetType }) {
     setLoading(true);
 
     try {
-      const res = await fetch('http://localhost:3000/api/questions', {
+      const res = await fetch(`${API_URL}/api/questions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

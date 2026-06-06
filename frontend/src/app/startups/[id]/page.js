@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -599,7 +600,7 @@ export default function StartupDetailPage() {
   const fetchStartup = async () => {
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      const res = await fetch(`http://localhost:3000/api/startups/${id}`, { headers });
+      const res = await fetch(`${API_URL}/api/startups/${id}`, { headers });
       const json = await res.json();
       if (json.success && json.data) {
         const merged = {
@@ -699,7 +700,7 @@ export default function StartupDetailPage() {
     }
     const method = isFollowing ? 'DELETE' : 'POST';
     try {
-      const res = await fetch(`http://localhost:3000/api/startups/${startup._id}/follow`, {
+      const res = await fetch(`${API_URL}/api/startups/${startup._id}/follow`, {
         method,
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -884,7 +885,7 @@ function InvestorInterestModal({ isOpen, onClose, startupId, onInterestSent }) {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3000/api/investor/interest-request', {
+      const res = await fetch(`${API_URL}/api/investor/interest-request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -919,7 +920,7 @@ function InvestorInterestModal({ isOpen, onClose, startupId, onInterestSent }) {
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden p-6 space-y-4">
         <div className="flex justify-between items-center border-b pb-3">
           <h3 className="text-lg font-bold text-slate-900 font-sans">Express Investment Interest</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700"></button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -990,7 +991,7 @@ function JobApplyModal({ isOpen, onClose, job, startupName, onSuccess }) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/jobs/${job._id}/apply`, {
+      const res = await fetch(`${API_URL}/api/jobs/${job._id}/apply`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -939,7 +939,7 @@ function InviteTeamModal({ isOpen, onClose, recipient }) {
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden p-6 space-y-4">
         <div className="flex justify-between items-center border-b pb-3">
           <h3 className="text-lg font-bold text-gray-900">Invite {recipient.name || recipient.fullName || recipient.username} to Team</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700"></button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

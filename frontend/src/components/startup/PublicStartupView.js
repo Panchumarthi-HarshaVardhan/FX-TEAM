@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState } from 'react';
 import Navbar from '../Navbar';
@@ -36,7 +37,7 @@ export default function PublicStartupView({ startup }) {
       return;
     }
     try {
-      const res = await fetch(`http://localhost:3000/api/startups/save/${startup._id}`, {
+      const res = await fetch(`${API_URL}/api/startups/save/${startup._id}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });

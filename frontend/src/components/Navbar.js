@@ -20,7 +20,6 @@ export default function Navbar({ dark = false }) {
   const dropdownRef = useRef(null);
   const createDropdownRef = useRef(null);
   const { user, loading, logout, token } = useAuth();
-
   const [mounted, setMounted] = useState(false);
   // eslint-disable-next-line react-compiler/react-compiler
   useEffect(() => {
@@ -51,50 +50,28 @@ export default function Navbar({ dark = false }) {
 
   const getLinkClass = (path) => {
     const active = isActive(path);
-    if (isDark) {
-      return `flex-shrink-0 px-3 py-2 rounded-md text-sm font-medium transition ${
-        active ? 'bg-white/10 text-white font-semibold' : 'text-gray-300 hover:text-white hover:bg-white/5'
-      }`;
-    } else {
-      return `flex-shrink-0 px-3 py-2 rounded-md text-sm font-medium transition ${
-        active ? 'bg-blue-50 text-primary font-semibold' : 'text-slate-700 hover:text-primary hover:bg-gray-50'
-      }`;
-    }
+    return `flex-shrink-0 px-3 py-2 rounded-md text-sm font-medium transition ${
+      active ? 'bg-blue-50 text-primary font-semibold' : 'text-slate-700 hover:text-primary hover:bg-gray-50'
+    }`;
   };
 
   const getMobileLinkClass = (path) => {
     const active = isActive(path);
-    if (isDark) {
-      return `block px-3 py-2 rounded-md text-base font-medium transition ${
-        active ? 'bg-white/10 text-white font-bold' : 'text-gray-300 hover:text-white hover:bg-white/5'
-      }`;
-    } else {
-      return `block px-3 py-2 rounded-md text-base font-medium transition ${
-        active ? 'bg-blue-50 text-primary font-bold' : 'text-slate-700 hover:text-primary hover:bg-gray-50'
-      }`;
-    }
+    return `block px-3 py-2 rounded-md text-base font-medium transition ${
+      active ? 'bg-blue-50 text-primary font-bold' : 'text-slate-700 hover:text-primary hover:bg-gray-50'
+    }`;
   };
 
   const getIconClass = (path) => {
     const active = isActive(path);
-    if (isDark) {
-      return `transition relative ${active ? 'text-white' : 'text-gray-400 hover:text-white'}`;
-    } else {
-      return `transition relative ${active ? 'text-primary' : 'text-gray-400 hover:text-primary'}`;
-    }
+    return `transition relative ${active ? 'text-primary' : 'text-gray-400 hover:text-primary'}`;
   };
 
   const getAvatarWrapperClass = () => {
     const active = isActive('/profile');
-    if (isDark) {
-      return `h-8 w-8 rounded-full flex items-center justify-center overflow-hidden border transition-all ${
-        active ? 'border-white ring-2 ring-white/20' : 'bg-[#111827] border-[rgba(255,255,255,0.08)] text-gray-100'
-      }`;
-    } else {
-      return `h-8 w-8 rounded-full flex items-center justify-center overflow-hidden border transition-all ${
-        active ? 'border-primary ring-2 ring-primary/20' : 'bg-section text-primary border-gray-200'
-      }`;
-    }
+    return `h-8 w-8 rounded-full flex items-center justify-center overflow-hidden border transition-all ${
+      active ? 'border-primary ring-2 ring-primary/20' : 'bg-section text-primary border-gray-200'
+    }`;
   };
 
 
@@ -275,27 +252,13 @@ export default function Navbar({ dark = false }) {
     };
   }, [socket, user, token]);
 
-  const navClass = isDark 
-    ? "sticky top-0 z-50 bg-[#0B0F19]/80 border-b border-[rgba(255,255,255,0.08)] backdrop-blur-md shadow-lg text-white" 
-    : "sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm text-gray-800";
-  const chevronClass = `h-4 w-4 transition-transform ${
-    isDark ? 'text-gray-400' : 'text-gray-500'
-  } ${isDropdownOpen ? 'rotate-180' : ''}`;
-  const dropdownClass = `absolute right-0 mt-2 w-56 rounded-xl shadow-lg py-2 ring-1 ring-black ring-opacity-5 z-50 animate-in fade-in zoom-in-95 duration-100 ${
-    isDark ? 'bg-[#111827] border border-[rgba(255,255,255,0.08)] text-gray-100' : 'bg-white text-gray-700'
-  }`;
-  const dropdownLinkClass = `block px-4 py-2 text-sm flex items-center transition-colors ${
-    isDark ? 'text-gray-300 hover:bg-white/5 hover:text-white' : 'text-gray-700 hover:bg-gray-50 hover:text-primary'
-  }`;
-  const dropdownDividerClass = `border-t my-1 ${
-    isDark ? 'border-[rgba(255,255,255,0.08)]' : 'border-gray-100'
-  }`;
-  const dropdownHeaderClass = `px-4 py-3 border-b mb-1 ${
-    isDark ? 'border-[rgba(255,255,255,0.08)]' : 'border-gray-100'
-  }`;
-  const mobileMenuClass = `md:hidden border-t ${
-    isDark ? 'bg-[#0B0F19] border-[rgba(255,255,255,0.08)] text-gray-100' : 'bg-white border-gray-100 text-gray-800'
-  }`;
+  const navClass = "sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm text-gray-800";
+  const chevronClass = `h-4 w-4 transition-transform text-gray-500 ${isDropdownOpen ? 'rotate-180' : ''}`;
+  const dropdownClass = "absolute right-0 mt-2 w-56 rounded-xl shadow-lg py-2 ring-1 ring-black ring-opacity-5 z-50 animate-in fade-in zoom-in-95 duration-100 bg-white text-gray-700";
+  const dropdownLinkClass = "block px-4 py-2 text-sm flex items-center transition-colors text-gray-700 hover:bg-gray-50 hover:text-primary";
+  const dropdownDividerClass = "border-t my-1 border-gray-100";
+  const dropdownHeaderClass = "px-4 py-3 border-b mb-1 border-gray-100";
+  const mobileMenuClass = "md:hidden border-t bg-white border-gray-100 text-gray-800";
 
   return (
     <nav className={navClass}>
@@ -465,7 +428,7 @@ export default function Navbar({ dark = false }) {
               </>
             ) : (
               <>
-                <Link href="/auth/login" className={dark ? "text-zinc-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition" : "text-slate-700 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition"}>
+                <Link href="/auth/login" className="text-slate-700 hover:text-primary px-3 py-2 rounded-md text-sm font-medium transition">
                   Log in
                 </Link>
                 <Link href="/auth/signup" className="flex items-center justify-center px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-white bg-primary hover:bg-blue-600 transition">
@@ -479,13 +442,13 @@ export default function Navbar({ dark = false }) {
           <div className="flex items-center md:hidden ml-auto">
             <Link
               href="/cart"
-              className={`mr-2 inline-flex items-center justify-center h-9 w-9 rounded-full ${dark ? 'bg-zinc-900 text-zinc-300' : 'bg-gray-100 text-gray-600'}`}
+              className="mr-2 inline-flex items-center justify-center h-9 w-9 rounded-full bg-gray-100 text-gray-600"
             >
               <ShoppingCart className="h-5 w-5" />
             </Link>
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className={`inline-flex items-center justify-center p-2 rounded-md transition focus:outline-none ${dark ? 'text-zinc-400 hover:text-white hover:bg-zinc-900' : 'text-gray-400 hover:text-primary hover:bg-gray-100'}`}
+              className="inline-flex items-center justify-center p-2 rounded-md transition focus:outline-none text-gray-400 hover:text-primary hover:bg-gray-100"
             >
               <Menu className="h-6 w-6" />
             </button>
@@ -525,7 +488,7 @@ export default function Navbar({ dark = false }) {
                       {user.profileImage ? (
                          <img src={user.profileImage} className="h-10 w-10 rounded-full object-cover border border-zinc-800" alt="" />
                       ) : (
-                         <div className={`h-10 w-10 rounded-full flex items-center justify-center border ${dark ? 'bg-zinc-900 border-zinc-800 text-white' : 'bg-section border-gray-200 text-primary'}`}>
+                         <div className="h-10 w-10 rounded-full flex items-center justify-center border bg-section border-gray-200 text-primary">
                            <User className="h-6 w-6" />
                          </div>
                       )}
@@ -559,14 +522,14 @@ export default function Navbar({ dark = false }) {
                   </Link>
                   <Link 
                     href="/create" 
-                    className={`block px-3 py-2 rounded-md text-base font-medium ${dark ? 'text-blue-400 hover:bg-zinc-900' : 'text-primary hover:bg-gray-50'}`}
+                    className="block px-3 py-2 rounded-md text-base font-medium text-primary hover:bg-gray-50"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     + Create Post
                   </Link>
                   <Link 
                     href="/upload" 
-                    className={`block px-3 py-2 rounded-md text-base font-medium ${dark ? 'text-purple-400 hover:bg-zinc-900' : 'text-purple-600 hover:bg-gray-50'}`}
+                    className="block px-3 py-2 rounded-md text-base font-medium text-purple-600 hover:bg-gray-50"
                     onClick={() => setIsMenuOpen(false)}
                   >
                     + Upload Video
@@ -584,7 +547,7 @@ export default function Navbar({ dark = false }) {
                  <Link href="/auth/login" className={getMobileLinkClass('/auth/login')}>
                   Log in
                 </Link>
-                <Link href="/auth/signup" className={`block px-3 py-2 rounded-md text-base font-medium ${dark ? 'text-blue-400 hover:bg-zinc-900' : 'text-primary hover:bg-gray-50'}`}>
+                <Link href="/auth/signup" className="block px-3 py-2 rounded-md text-base font-medium text-primary hover:bg-gray-50">
                   Sign Up
                 </Link>
               </>

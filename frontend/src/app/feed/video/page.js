@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState, useEffect, useRef } from 'react';
 import Navbar from '../../../components/Navbar';
@@ -17,7 +18,7 @@ export default function VideoFeedPage() {
 
   const fetchVideos = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/posts?type=video');
+      const res = await fetch(`${API_URL}/api/posts?type=video`);
       
       const contentType = res.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
@@ -180,7 +181,7 @@ const VideoCard = React.forwardRef(({ post, isActive }, ref) => {
         
         {post.startupId && (
            <div className="flex items-center space-x-2 text-xs bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full w-fit">
-             <span>🚀</span>
+             <span></span>
              <span>{post.startupId.name}</span>
            </div>
         )}

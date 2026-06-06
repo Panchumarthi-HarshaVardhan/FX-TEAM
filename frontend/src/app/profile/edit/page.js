@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -134,7 +135,7 @@ export default function EditProfilePage() {
         }
       };
 
-      const res = await fetch('http://localhost:3000/api/users/update', {
+      const res = await fetch(`${API_URL}/api/users/update`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -157,7 +158,7 @@ export default function EditProfilePage() {
         await refreshUser();
 
         // Re-fetch profile from backend GET /api/users/me
-        const meRes = await fetch('http://localhost:3000/api/users/me', {
+        const meRes = await fetch(`${API_URL}/api/users/me`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -204,7 +205,7 @@ export default function EditProfilePage() {
     
     try {
       const endpoint = type === 'avatar' ? 'upload-avatar' : 'upload-cover';
-      const res = await fetch(`http://localhost:3000/api/users/${endpoint}`, {
+      const res = await fetch(`${API_URL}/api/users/${endpoint}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`

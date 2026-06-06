@@ -679,7 +679,7 @@ function LaunchProductModal({ isOpen, onClose }) {
 
               <div className="flex justify-end gap-3">
                 <button onClick={() => setStep(1)} className="btn-secondary px-6 py-2">Edit</button>
-                <button onClick={() => { alert('Product launched successfully! 🚀'); onClose(); }} className="btn-primary px-6 py-2 flex items-center gap-2">
+                <button onClick={() => { alert('Product launched successfully! '); onClose(); }} className="btn-primary px-6 py-2 flex items-center gap-2">
                   <Rocket className="h-4 w-4" />
                   Launch Product
                 </button>
