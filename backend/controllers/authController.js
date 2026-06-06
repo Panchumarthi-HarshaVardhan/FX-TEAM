@@ -161,6 +161,61 @@ exports.login = async (req, res) => {
       return res.status(403).json({ message: 'Please verify your email address to log in.' });
     }
 
+    // Generate and send OTP for login
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    await updateById('users', user.id, {
+      loginOtp: otp,
+      loginOtpExpires: Date.now() + 15 * 60 * 1000
+    });
+
+    // Send OTP email
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaec; border-radius: 10px;">
+        <h2 style="color: #333;">Login Verification - FounderX</h2>
+        <p style="color: #555; font-size: 16px;">Please use the following OTP to log in. This OTP is valid for 15 minutes.</p>
+        <div style="background: #f4f4f4; padding: 15px; text-align: center; border-radius: 5px; margin: 20px 0;">
+          <span style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #007bff;">${otp}</span>
+        </div>
+        <p style="color: #999; font-size: 14px;">If you didn't request this, you can safely ignore this email.</p>
+      </div>
+    `;
+
+    await sendEmail({
+      email: user.email,
+      subject: 'Your login verification code - FounderX',
+      html: emailHtml
+    });
+
+    res.status(200).json({ success: true, requireOtp: true, email: user.email });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: error.message || 'Server Error' });
+  }
+};
+
+exports.verifyLoginOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+
+    const user = await findOne('users', (item) => {
+      return item.email === email.trim().toLowerCase() &&
+        item.loginOtp === otp &&
+        item.loginOtpExpires > Date.now();
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    // Clear OTP fields
+    await updateById('users', user.id, {
+      loginOtp: null,
+      loginOtpExpires: null
+    });
+
     const token = generateToken(user.id);
     const userPublic = toPublicUser(user);
     userPublic.token = token;
@@ -173,7 +228,7 @@ exports.login = async (req, res) => {
       path: '/'
     }).json(userPublic);
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Verify login OTP error:', error);
     res.status(500).json({ message: error.message || 'Server Error' });
   }
 };
