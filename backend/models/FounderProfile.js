@@ -75,4 +75,4 @@ founderProfileSchema.virtual('user', {
   justOne: true
 });
 
-module.exports = mongoose.model('FounderProfile', founderProfileSchema);
+module.exports = require('../utils/firebaseModel').models.FounderProfile;

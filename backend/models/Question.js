@@ -49,4 +49,4 @@ const questionSchema = new mongoose.Schema({
 // Index for fetching questions for a specific target
 questionSchema.index({ targetId: 1, targetType: 1, isPublic: 1, createdAt: -1 });
 
-module.exports = mongoose.model('Question', questionSchema);
+module.exports = require('../utils/firebaseModel').models.Question;

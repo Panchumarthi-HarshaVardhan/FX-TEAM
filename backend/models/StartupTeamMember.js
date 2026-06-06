@@ -56,4 +56,4 @@ const startupTeamMemberSchema = new mongoose.Schema({
 // Compound index to ensure uniqueness per startup-user pair
 startupTeamMemberSchema.index({ startupId: 1, userId: 1 }, { unique: true });
 
-module.exports = mongoose.model('StartupTeamMember', startupTeamMemberSchema);
+module.exports = require('../utils/firebaseModel').models.StartupTeamMember;

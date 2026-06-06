@@ -340,4 +340,4 @@ postSchema.index({ 'metrics.views': -1 });
 postSchema.index({ 'metrics.engagement': -1 });
 postSchema.index({ tags: 1 });
 
-module.exports = mongoose.model('Post', postSchema);
+module.exports = require('../utils/firebaseModel').models.Post;

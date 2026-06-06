@@ -49,4 +49,4 @@ const startupRoleRequestSchema = new mongoose.Schema({
   timestamps: true
 });
 
-module.exports = mongoose.model('StartupRoleRequest', startupRoleRequestSchema);
+module.exports = require('../utils/firebaseModel').models.StartupRoleRequest;

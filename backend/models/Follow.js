@@ -24,4 +24,4 @@ const followSchema = new mongoose.Schema({
 // Compound index for unique follows
 followSchema.index({ followerId: 1, followedId: 1 }, { unique: true });
 
-module.exports = mongoose.model('Follow', followSchema);
+module.exports = require('../utils/firebaseModel').models.Follow;

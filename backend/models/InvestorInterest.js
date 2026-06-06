@@ -33,4 +33,4 @@ const investorInterestSchema = new mongoose.Schema({
 // Enforce unique constraints to prevent duplicate investor interest submissions
 investorInterestSchema.index({ videoId: 1, investorId: 1 }, { unique: true });
 
-module.exports = mongoose.model('InvestorInterest', investorInterestSchema);
+module.exports = require('../utils/firebaseModel').models.InvestorInterest;

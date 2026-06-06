@@ -59,4 +59,4 @@ const jobSeekerProfileSchema = new mongoose.Schema({
   timestamps: true
 });
 
-module.exports = mongoose.model('JobSeekerProfile', jobSeekerProfileSchema);
+module.exports = require('../utils/firebaseModel').models.JobSeekerProfile;

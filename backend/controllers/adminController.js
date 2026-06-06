@@ -1,14 +1,13 @@
-const User = require('../models/User');
-const Startup = require('../models/Startup');
-const InvestorProfile = require('../models/InvestorProfile');
-const JobApplication = require('../models/JobApplication');
-const StartupRoleRequest = require('../models/StartupRoleRequest');
-const Post = require('../models/Post');
-const Report = require('../models/Report');
-const VerificationRequest = require('../models/VerificationRequest');
-const Video = require('../models/Video');
+const {
+  getAll,
+  getById,
+  create,
+  updateById,
+  deleteById,
+  findOneByField,
+  filter
+} = require('../utils/firebaseHelpers');
 
-// In-memory system settings storage for hackathon simplicity
 let systemSettings = {
   platformName: 'FounderX',
   allowSignups: true,
@@ -18,23 +17,38 @@ let systemSettings = {
   supportEmail: 'admin@founderx.com'
 };
 
-// 1. Dashboard Stats
+const countByRole = async (role) => {
+  const users = await getAll('users');
+  if (!role) return users.length;
+  if (role === 'job_seeker') {
+    return users.filter((u) => u.role === 'user' || u.role === 'job_seeker').length;
+  }
+  return users.filter((u) => u.role === role).length;
+};
+
+const parseIntOrDefault = (val, defaultVal = 20) => {
+  const parsed = parseInt(val);
+  return isNaN(parsed) ? defaultVal : parsed;
+};
+
 exports.getAdminStats = async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
-    const founders = await User.countDocuments({ role: 'founder' });
-    const investors = await User.countDocuments({ role: 'investor' });
-    const jobSeekers = await User.countDocuments({ role: { $in: ['user', 'job_seeker'] } });
-    const startups = await Startup.countDocuments();
-    const posts = await Post.countDocuments({ contentType: { $ne: 'video' } });
-    const reels = await Post.countDocuments({ contentType: 'video' });
-    
-    const jobAppsCount = await JobApplication.countDocuments();
-    const roleReqsCount = await StartupRoleRequest.countDocuments();
-    const totalApplications = jobAppsCount + roleReqsCount;
-    
-    const reports = await Report.countDocuments();
-    const pendingVerifications = await VerificationRequest.countDocuments({ status: 'pending' });
+    const users = await getAll('users');
+    const startups = await getAll('startups');
+    const posts = await getAll('posts');
+    const applications = await getAll('applications');
+    const reports = await getAll('reports');
+    const verificationRequests = await getAll('verificationRequests');
+
+    const totalUsers = users.length;
+    const founders = users.filter((u) => u.role === 'founder').length;
+    const investors = users.filter((u) => u.role === 'investor').length;
+    const jobSeekers = users.filter((u) => u.role === 'user' || u.role === 'job_seeker').length;
+
+    const postsCount = posts.filter((p) => p.contentType !== 'video').length;
+    const reelsCount = posts.filter((p) => p.contentType === 'video').length;
+
+    const pendingVerifications = verificationRequests.filter((v) => v.status === 'pending').length;
 
     res.status(200).json({
       success: true,
@@ -43,70 +57,75 @@ exports.getAdminStats = async (req, res) => {
         founders,
         investors,
         jobSeekers,
-        startups,
-        posts,
-        reels,
-        totalApplications,
-        reports,
+        startups: startups.length,
+        posts: postsCount,
+        reels: reelsCount,
+        totalApplications: applications.length,
+        reports: reports.length,
         pendingVerifications
       }
     });
   } catch (error) {
-    console.error(error);
+    console.error('Admin stats error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-// 2. User Management
 exports.getUsers = async (req, res) => {
   try {
     const { search, role, isVerified, isActive, page = 1, limit = 20 } = req.query;
-    const query = {};
+    const pageNum = parseIntOrDefault(page, 1);
+    const limitNum = parseIntOrDefault(limit, 20);
+
+    let users = await getAll('users');
 
     if (search) {
-      query.$or = [
-        { fullName: { $regex: search, $options: 'i' } },
-        { username: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
-      ];
+      const searchLower = search.toLowerCase();
+      users = users.filter((u) => {
+        const fullName = (u.fullName || '').toLowerCase();
+        const username = (u.username || '').toLowerCase();
+        const email = (u.email || '').toLowerCase();
+        return fullName.includes(searchLower) || username.includes(searchLower) || email.includes(searchLower);
+      });
     }
 
     if (role) {
-      query.role = role;
+      users = users.filter((u) => u.role === role);
     }
 
     if (isVerified) {
-      query.isVerified = isVerified === 'true';
+      const verified = isVerified === 'true';
+      users = users.filter((u) => u.isVerified === verified);
     }
 
     if (isActive) {
-      query.isActive = isActive === 'true';
+      const active = isActive === 'true';
+      users = users.filter((u) => u.isActive === active);
     }
 
-    const skip = (page - 1) * limit;
-    const total = await User.countDocuments(query);
-    const users = await User.find(query)
-      .select('-passwordHash')
-      .skip(skip)
-      .limit(parseInt(limit))
-      .sort('-createdAt');
+    const total = users.length;
+    const skip = (pageNum - 1) * limitNum;
+    const paginatedUsers = users.slice(skip, skip + limitNum).map((u) => {
+      const { passwordHash, ...rest } = u;
+      return rest;
+    });
 
     res.status(200).json({
       success: true,
-      count: users.length,
+      count: paginatedUsers.length,
       total,
-      pages: Math.ceil(total / limit),
-      data: users
+      pages: Math.ceil(total / limitNum),
+      data: paginatedUsers
     });
   } catch (error) {
-    console.error(error);
+    console.error('Get users error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
 exports.toggleUserBlock = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await getById('users', req.params.id);
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
@@ -115,12 +134,12 @@ exports.toggleUserBlock = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Cannot block administrative accounts' });
     }
 
-    user.isActive = !user.isActive;
-    await user.save();
+    const newState = !user.isActive;
+    const updated = await updateById('users', req.params.id, { isActive: newState });
 
-    res.status(200).json({ success: true, data: user });
+    res.status(200).json({ success: true, data: updated });
   } catch (error) {
-    console.error(error);
+    console.error('Toggle user block error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
@@ -128,30 +147,35 @@ exports.toggleUserBlock = async (req, res) => {
 exports.verifyUser = async (req, res) => {
   try {
     const { isVerified, badge } = req.body;
-    const user = await User.findById(req.params.id);
+    const user = await getById('users', req.params.id);
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    user.isVerified = isVerified;
-    user.verificationStatus = isVerified ? 'verified' : 'unverified';
-    if (badge) {
-      user.verificationBadge = badge; // 'founder', 'investor', 'none'
-    } else {
-      user.verificationBadge = isVerified ? (user.role === 'investor' ? 'investor' : 'founder') : 'none';
-    }
-    
-    await user.save();
-    res.status(200).json({ success: true, data: user });
+    const verificationBadge = badge
+      ? badge
+      : isVerified
+      ? user.role === 'investor'
+        ? 'investor'
+        : 'founder'
+      : 'none';
+
+    const updated = await updateById('users', req.params.id, {
+      isVerified,
+      verificationStatus: isVerified ? 'verified' : 'unverified',
+      verificationBadge
+    });
+
+    res.status(200).json({ success: true, data: updated });
   } catch (error) {
-    console.error(error);
+    console.error('Verify user error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
 exports.deleteUser = async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await getById('users', req.params.id);
     if (!user) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
@@ -160,49 +184,52 @@ exports.deleteUser = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Cannot delete administrative accounts' });
     }
 
-    await User.findByIdAndDelete(req.params.id);
+    await deleteById('users', req.params.id);
     res.status(200).json({ success: true, message: 'User deleted successfully' });
   } catch (error) {
-    console.error(error);
+    console.error('Delete user error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-// 3. Startup Management
 exports.getStartups = async (req, res) => {
   try {
     const { search, stage, industry, isVerified, page = 1, limit = 20 } = req.query;
-    const query = {};
+    const pageNum = parseIntOrDefault(page, 1);
+    const limitNum = parseIntOrDefault(limit, 20);
+
+    let startups = await getAll('startups');
 
     if (search) {
-      query.name = { $regex: search, $options: 'i' };
-    }
-    if (stage) {
-      query.stage = stage;
-    }
-    if (industry) {
-      query.industry = industry;
-    }
-    if (isVerified) {
-      query.isVerified = isVerified === 'true';
+      const searchLower = search.toLowerCase();
+      startups = startups.filter((s) => (s.name || '').toLowerCase().includes(searchLower));
     }
 
-    const skip = (page - 1) * limit;
-    const total = await Startup.countDocuments(query);
-    const startups = await Startup.find(query)
-      .populate('founderId', 'name email')
-      .skip(skip)
-      .limit(parseInt(limit))
-      .sort('-createdAt');
+    if (stage) {
+      startups = startups.filter((s) => s.stage === stage);
+    }
+
+    if (industry) {
+      startups = startups.filter((s) => s.industry === industry);
+    }
+
+    if (isVerified) {
+      const verified = isVerified === 'true';
+      startups = startups.filter((s) => s.isVerified === verified);
+    }
+
+    const total = startups.length;
+    const skip = (pageNum - 1) * limitNum;
+    const paginatedStartups = startups.slice(skip, skip + limitNum);
 
     res.status(200).json({
       success: true,
       total,
-      pages: Math.ceil(total / limit),
-      data: startups
+      pages: Math.ceil(total / limitNum),
+      data: paginatedStartups
     });
   } catch (error) {
-    console.error(error);
+    console.error('Get startups error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
@@ -210,19 +237,20 @@ exports.getStartups = async (req, res) => {
 exports.verifyStartup = async (req, res) => {
   try {
     const { isVerified, status } = req.body;
-    const startup = await Startup.findById(req.params.id);
+    const startup = await getById('startups', req.params.id);
     if (!startup) {
       return res.status(404).json({ success: false, error: 'Startup not found' });
     }
 
-    startup.isVerified = isVerified;
-    startup.verified = isVerified;
-    startup.verificationStatus = status || (isVerified ? 'verified' : 'unverified');
-    
-    await startup.save();
-    res.status(200).json({ success: true, data: startup });
+    const updated = await updateById('startups', req.params.id, {
+      isVerified,
+      verified: isVerified,
+      verificationStatus: status || (isVerified ? 'verified' : 'unverified')
+    });
+
+    res.status(200).json({ success: true, data: updated });
   } catch (error) {
-    console.error(error);
+    console.error('Verify startup error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
@@ -230,307 +258,258 @@ exports.verifyStartup = async (req, res) => {
 exports.editStartup = async (req, res) => {
   try {
     const { name, oneLinePitch, industry, stage, contactEmail, description } = req.body;
-    const startup = await Startup.findById(req.params.id);
+    const startup = await getById('startups', req.params.id);
     if (!startup) {
       return res.status(404).json({ success: false, error: 'Startup not found' });
     }
 
-    if (name) startup.name = name;
-    if (oneLinePitch) startup.oneLinePitch = oneLinePitch;
-    if (industry) startup.industry = industry;
-    if (stage) startup.stage = stage;
-    if (contactEmail) startup.contactEmail = contactEmail;
-    if (description) startup.description = description;
+    const updates = {};
+    if (name !== undefined) updates.name = name;
+    if (oneLinePitch !== undefined) updates.oneLinePitch = oneLinePitch;
+    if (industry !== undefined) updates.industry = industry;
+    if (stage !== undefined) updates.stage = stage;
+    if (contactEmail !== undefined) updates.contactEmail = contactEmail;
+    if (description !== undefined) updates.description = description;
 
-    await startup.save();
-    res.status(200).json({ success: true, data: startup });
+    const updated = await updateById('startups', req.params.id, updates);
+    res.status(200).json({ success: true, data: updated });
   } catch (error) {
-    console.error(error);
+    console.error('Edit startup error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
 exports.deleteStartup = async (req, res) => {
   try {
-    const startup = await Startup.findById(req.params.id);
+    const startup = await getById('startups', req.params.id);
     if (!startup) {
       return res.status(404).json({ success: false, error: 'Startup not found' });
     }
 
-    await Startup.findByIdAndDelete(req.params.id);
+    await deleteById('startups', req.params.id);
     res.status(200).json({ success: true, message: 'Startup deleted successfully' });
   } catch (error) {
-    console.error(error);
+    console.error('Delete startup error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-// 4. Investor Management
-exports.getInvestors = async (req, res) => {
-  try {
-    const investors = await User.find({ role: 'investor' })
-      .select('-passwordHash')
-      .populate('investorProfile')
-      .sort('-createdAt');
-
-    res.status(200).json({ success: true, data: investors });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, error: 'Server Error' });
-  }
-};
-
-exports.verifyInvestor = async (req, res) => {
-  try {
-    const { isVerified } = req.body;
-    const user = await User.findById(req.params.id);
-    if (!user || user.role !== 'investor') {
-      return res.status(404).json({ success: false, error: 'Investor not found' });
-    }
-
-    user.isVerified = isVerified;
-    user.verificationStatus = isVerified ? 'verified' : 'rejected';
-    user.verificationBadge = isVerified ? 'investor' : 'none';
-    
-    await user.save();
-    res.status(200).json({ success: true, data: user });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, error: 'Server Error' });
-  }
-};
-
-// 5. Applications Sourcing Management
 exports.getApplications = async (req, res) => {
   try {
-    const jobApps = await JobApplication.find()
-      .populate('jobId', 'title')
-      .populate('startupId', 'name')
-      .populate('founderId', 'name email')
-      .populate('applicantId', 'name email username role profileImage')
-      .sort('-createdAt')
-      .lean();
+    const { status, page = 1, limit = 20 } = req.query;
+    const pageNum = parseIntOrDefault(page, 1);
+    const limitNum = parseIntOrDefault(limit, 20);
 
-    const roleReqs = await StartupRoleRequest.find()
-      .populate('startupId', 'name')
-      .populate('founderId', 'name email')
-      .populate('applicantId', 'name email username role profileImage')
-      .sort('-createdAt')
-      .lean();
+    let applications = await getAll('applications');
 
-    // Standardize structure for unified view
-    const formattedJobApps = jobApps.map(app => ({
-      _id: app._id,
-      type: 'Job opening',
-      roleTitle: app.jobId?.title || 'Unknown Role',
-      startupName: app.startupId?.name || 'Unknown Startup',
-      founderName: app.founderId?.name || 'N/A',
-      applicantName: app.applicantId?.name || 'Anonymous',
-      applicantEmail: app.applicantId?.email || 'N/A',
-      applicantRole: app.applicantId?.role || 'user',
-      status: app.status,
-      resume: app.resume,
-      createdAt: app.createdAt
-    }));
-
-    const formattedRoleReqs = roleReqs.map(app => ({
-      _id: app._id,
-      type: `Custom Request (${app.requestType})`,
-      roleTitle: app.roleTitle || 'Custom Candidate',
-      startupName: app.startupId?.name || 'Unknown Startup',
-      founderName: app.founderId?.name || 'N/A',
-      applicantName: app.applicantId?.name || 'Anonymous',
-      applicantEmail: app.applicantId?.email || 'N/A',
-      applicantRole: app.applicantId?.role || 'user',
-      status: app.status,
-      resume: app.resume,
-      createdAt: app.createdAt
-    }));
-
-    const allApplications = [...formattedJobApps, ...formattedRoleReqs].sort((a, b) => b.createdAt - a.createdAt);
-
-    res.status(200).json({ success: true, data: allApplications });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, error: 'Server Error' });
-  }
-};
-
-exports.updateApplicationStatus = async (req, res) => {
-  try {
-    const { status, type } = req.body; // type is 'Job opening' or custom request
-    const id = req.params.id;
-
-    if (type === 'Job opening') {
-      const app = await JobApplication.findById(id);
-      if (!app) {
-        return res.status(404).json({ success: false, error: 'Job Application not found' });
-      }
-      app.status = status;
-      await app.save();
-      return res.status(200).json({ success: true, data: app });
-    } else {
-      const app = await StartupRoleRequest.findById(id);
-      if (!app) {
-        return res.status(404).json({ success: false, error: 'Role Request not found' });
-      }
-      app.status = status;
-      await app.save();
-      return res.status(200).json({ success: true, data: app });
+    if (status) {
+      applications = applications.filter((app) => app.status === status);
     }
+
+    const total = applications.length;
+    const skip = (pageNum - 1) * limitNum;
+    const paginatedApps = applications.slice(skip, skip + limitNum);
+
+    res.status(200).json({
+      success: true,
+      total,
+      pages: Math.ceil(total / limitNum),
+      data: paginatedApps
+    });
   } catch (error) {
-    console.error(error);
+    console.error('Get applications error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-// 6. Posts Tab (Community Newsfeed + Reels)
 exports.getPosts = async (req, res) => {
   try {
-    const posts = await Post.find()
-      .populate('authorId', 'name email username profileImage')
-      .populate('startupId', 'name')
-      .sort('-createdAt');
+    const { page = 1, limit = 20 } = req.query;
+    const pageNum = parseIntOrDefault(page, 1);
+    const limitNum = parseIntOrDefault(limit, 20);
 
-    res.status(200).json({ success: true, data: posts });
+    let posts = await getAll('posts');
+    posts = posts.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+    const total = posts.length;
+    const skip = (pageNum - 1) * limitNum;
+    const paginatedPosts = posts.slice(skip, skip + limitNum);
+
+    res.status(200).json({
+      success: true,
+      total,
+      pages: Math.ceil(total / limitNum),
+      data: paginatedPosts
+    });
   } catch (error) {
-    console.error(error);
+    console.error('Get posts error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
 exports.deletePost = async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = await getById('posts', req.params.id);
     if (!post) {
-      return res.status(404).json({ success: false, error: 'Post or video not found' });
+      return res.status(404).json({ success: false, error: 'Post not found' });
     }
 
-    await Post.findByIdAndDelete(req.params.id);
-    res.status(200).json({ success: true, message: 'Content deleted successfully' });
+    await deleteById('posts', req.params.id);
+    res.status(200).json({ success: true, message: 'Post deleted successfully' });
   } catch (error) {
-    console.error(error);
+    console.error('Delete post error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-// 7. Incident Reports Handling
 exports.getReports = async (req, res) => {
   try {
-    const reports = await Report.find()
-      .populate('reporterId', 'name email')
-      .sort('-createdAt');
+    const { status, page = 1, limit = 20 } = req.query;
+    const pageNum = parseIntOrDefault(page, 1);
+    const limitNum = parseIntOrDefault(limit, 20);
 
-    res.status(200).json({ success: true, data: reports });
+    let reports = await getAll('reports');
+
+    if (status) {
+      reports = reports.filter((r) => r.status === status);
+    }
+
+    reports = reports.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    const total = reports.length;
+    const skip = (pageNum - 1) * limitNum;
+    const paginatedReports = reports.slice(skip, skip + limitNum);
+
+    res.status(200).json({
+      success: true,
+      total,
+      pages: Math.ceil(total / limitNum),
+      data: paginatedReports
+    });
   } catch (error) {
-    console.error(error);
+    console.error('Get reports error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-exports.updateReportStatus = async (req, res) => {
+exports.resolveReport = async (req, res) => {
   try {
-    const { status } = req.body; // 'Reviewed', 'Resolved', 'Dismissed'
-    const report = await Report.findById(req.params.id);
+    const { action, reason } = req.body;
+    const report = await getById('reports', req.params.id);
     if (!report) {
       return res.status(404).json({ success: false, error: 'Report not found' });
     }
 
-    report.status = status;
-    await report.save();
+    const updated = await updateById('reports', req.params.id, {
+      status: 'resolved',
+      adminAction: action,
+      resolutionReason: reason,
+      resolvedAt: Date.now()
+    });
 
-    res.status(200).json({ success: true, data: report });
+    res.status(200).json({ success: true, data: updated });
   } catch (error) {
-    console.error(error);
+    console.error('Resolve report error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-// 8. Analytics Aggregation
-exports.getAnalytics = async (req, res) => {
+exports.getUsersGrowthChart = async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
-    const founders = await User.countDocuments({ role: 'founder' });
-    const investors = await User.countDocuments({ role: 'investor' });
-    const jobSeekers = await User.countDocuments({ role: { $in: ['user', 'job_seeker'] } });
-    const admins = await User.countDocuments({ role: 'admin' });
+    const users = await getAll('users');
+    const now = Date.now();
+    const sixMonthsAgo = now - 180 * 24 * 60 * 60 * 1000;
 
-    const totalStartups = await Startup.countDocuments();
-    const totalPosts = await Post.countDocuments({ contentType: { $ne: 'video' } });
-    const totalReels = await Post.countDocuments({ contentType: 'video' });
-    const totalApplications = await JobApplication.countDocuments() + await StartupRoleRequest.countDocuments();
+    const filteredUsers = users.filter((u) => (u.createdAt || 0) >= sixMonthsAgo);
 
-    // Compile growth trends over last 6 months
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const userGrowth = [];
-    const startupGrowth = [];
-    
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
-    sixMonthsAgo.setDate(1);
-
-    let currentUsersCount = await User.countDocuments({ createdAt: { $lt: sixMonthsAgo } });
-    let currentStartupsCount = await Startup.countDocuments({ createdAt: { $lt: sixMonthsAgo } });
-
+    const months = {};
     for (let i = 0; i < 6; i++) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - (5 - i));
-      const year = d.getFullYear();
-      const monthNum = d.getMonth() + 1;
-      const label = `${months[d.getMonth()]} ${year}`;
-
-      const startOfMonth = new Date(year, d.getMonth(), 1);
-      const endOfMonth = new Date(year, d.getMonth() + 1, 0, 23, 59, 59, 999);
-
-      const newUsers = await User.countDocuments({ createdAt: { $gte: startOfMonth, $lte: endOfMonth } });
-      const newStartups = await Startup.countDocuments({ createdAt: { $gte: startOfMonth, $lte: endOfMonth } });
-
-      currentUsersCount += newUsers;
-      currentStartupsCount += newStartups;
-
-      userGrowth.push({ label, registrations: newUsers, total: currentUsersCount });
-      startupGrowth.push({ label, newCount: newStartups, total: currentStartupsCount });
+      const d = new Date(now);
+      d.setMonth(d.getMonth() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      months[key] = 0;
     }
 
-    res.status(200).json({
-      success: true,
-      data: {
-        roleDistribution: { founder: founders, investor: investors, jobSeeker: jobSeekers, admin: admins },
-        summary: { totalUsers, totalStartups, totalPosts, totalReels, totalApplications },
-        userGrowth,
-        startupGrowth
+    filteredUsers.forEach((u) => {
+      const d = new Date(u.createdAt || now);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (months.hasOwnProperty(key)) {
+        months[key]++;
       }
     });
+
+    const data = Object.entries(months).map(([month, count]) => ({ month, count }));
+    res.status(200).json({ success: true, data });
   } catch (error) {
-    console.error(error);
+    console.error('Users growth chart error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-// 9. Config Settings Management
-exports.getSettings = async (req, res) => {
+exports.getSystemSettings = (req, res) => {
   try {
     res.status(200).json({ success: true, data: systemSettings });
   } catch (error) {
-    console.error(error);
+    console.error('Get system settings error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
 
-exports.updateSettings = async (req, res) => {
+exports.updateSystemSettings = (req, res) => {
   try {
     const { platformName, allowSignups, maintenanceMode, enableAIAssistant, moderationLevel, supportEmail } = req.body;
-    
-    if (platformName !== undefined) systemSettings.platformName = platformName;
-    if (allowSignups !== undefined) systemSettings.allowSignups = allowSignups;
-    if (maintenanceMode !== undefined) systemSettings.maintenanceMode = maintenanceMode;
-    if (enableAIAssistant !== undefined) systemSettings.enableAIAssistant = enableAIAssistant;
-    if (moderationLevel !== undefined) systemSettings.moderationLevel = moderationLevel;
-    if (supportEmail !== undefined) systemSettings.supportEmail = supportEmail;
+    if (platformName) systemSettings.platformName = platformName;
+    if (typeof allowSignups === 'boolean') systemSettings.allowSignups = allowSignups;
+    if (typeof maintenanceMode === 'boolean') systemSettings.maintenanceMode = maintenanceMode;
+    if (typeof enableAIAssistant === 'boolean') systemSettings.enableAIAssistant = enableAIAssistant;
+    if (moderationLevel) systemSettings.moderationLevel = moderationLevel;
+    if (supportEmail) systemSettings.supportEmail = supportEmail;
 
     res.status(200).json({ success: true, data: systemSettings });
   } catch (error) {
-    console.error(error);
+    console.error('Update system settings error:', error);
     res.status(500).json({ success: false, error: 'Server Error' });
   }
 };
+
+exports.getInvestors = async (req, res) => {
+  try {
+    const { page = 1, limit = 20 } = req.query;
+    const pageNum = parseIntOrDefault(page, 1);
+    const limitNum = parseIntOrDefault(limit, 20);
+
+    let users = (await getAll('users')).filter((u) => u.role === 'investor');
+    const total = users.length;
+    const skip = (pageNum - 1) * limitNum;
+    const paginated = users.slice(skip, skip + limitNum).map((u) => {
+      const { passwordHash, ...rest } = u;
+      return rest;
+    });
+
+    res.status(200).json({ success: true, total, pages: Math.ceil(total / limitNum), data: paginated });
+  } catch (error) {
+    console.error('Get investors error:', error);
+    res.status(500).json({ success: false, error: 'Server Error' });
+  }
+};
+
+exports.verifyInvestor = exports.verifyUser;
+
+exports.updateApplicationStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    const application = await getById('applications', req.params.id);
+    if (!application) {
+      return res.status(404).json({ success: false, error: 'Application not found' });
+    }
+    const updated = await updateById('applications', req.params.id, { status, updatedAt: Date.now() });
+    res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Update application status error:', error);
+    res.status(500).json({ success: false, error: 'Server Error' });
+  }
+};
+
+exports.updateReportStatus = exports.resolveReport;
+exports.getAnalytics = exports.getUsersGrowthChart;
+exports.getSettings = exports.getSystemSettings;
+exports.updateSettings = exports.updateSystemSettings;

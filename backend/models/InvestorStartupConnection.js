@@ -68,4 +68,4 @@ const investorStartupConnectionSchema = new mongoose.Schema({
 // Ensure compound unique constraint to prevent duplicate connections
 investorStartupConnectionSchema.index({ startupId: 1, investorId: 1 }, { unique: true });
 
-module.exports = mongoose.model('InvestorStartupConnection', investorStartupConnectionSchema);
+module.exports = require('../utils/firebaseModel').models.InvestorStartupConnection;

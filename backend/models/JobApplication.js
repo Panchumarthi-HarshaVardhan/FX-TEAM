@@ -49,4 +49,4 @@ const jobApplicationSchema = new mongoose.Schema({
 // Ensure a user can only apply once to a specific job opening
 jobApplicationSchema.index({ jobId: 1, applicantId: 1 }, { unique: true });
 
-module.exports = mongoose.model('JobApplication', jobApplicationSchema);
+module.exports = require('../utils/firebaseModel').models.JobApplication;

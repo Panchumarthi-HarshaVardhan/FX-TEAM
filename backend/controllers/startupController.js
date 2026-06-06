@@ -1,10 +1,10 @@
-const Startup = require('../models/Startup');
+﻿const Startup = require('../models/Startup');
 const Post = require('../models/Post');
 const Application = require('../models/Application');
 const InvestmentRequest = require('../models/InvestmentRequest');
 const Report = require('../models/Report');
 const User = require('../models/User');
-const mongoose = require('mongoose');
+const { mongooseCompat: mongoose } = require('../utils/firebaseModel');
 const FounderProfile = require('../models/FounderProfile');
 const Follow = require('../models/Follow');
 const SavedItem = require('../models/SavedItem');

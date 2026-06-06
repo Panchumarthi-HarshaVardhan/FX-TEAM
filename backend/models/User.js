@@ -425,4 +425,4 @@ userSchema.index({ role: 1 });
 userSchema.index({ 'skills': 1 });
 userSchema.index({ 'location.country': 1 });
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = require('../utils/firebaseModel').models.User;
