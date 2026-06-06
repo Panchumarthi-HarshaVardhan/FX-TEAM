@@ -91,7 +91,13 @@ const mailSchema = new mongoose.Schema({
   },
   attachments: [{
     type: String
-  }]
+  }],
+  meetingCode: {
+    type: String
+  },
+  meetingRoomId: {
+    type: String
+  }
 }, {
   timestamps: true
 });

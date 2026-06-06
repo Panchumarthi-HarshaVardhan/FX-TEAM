@@ -908,7 +908,7 @@ function InvestorInterestModal({ isOpen, onClose, startupId, onInterestSent }) {
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden p-6 space-y-4">
         <div className="flex justify-between items-center border-b pb-3">
           <h3 className="text-lg font-bold text-slate-900 font-sans">Express Investment Interest</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700"></button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -1016,7 +1016,7 @@ function JobApplyModal({ isOpen, onClose, job, startupName, onSuccess }) {
             onClick={onClose} 
             className="h-8 w-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-gray-500 hover:text-gray-700 transition"
           >
-            ✕
+            
           </button>
         </div>
 

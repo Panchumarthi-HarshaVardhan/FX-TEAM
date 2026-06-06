@@ -5,6 +5,7 @@ import { useAuth } from '../../../context/AuthContext';
 import Navbar from '../../../components/Navbar';
 import { useRouter } from 'next/navigation';
 import { Building2, Globe, FileText, Loader, Rocket } from 'lucide-react';
+import { API_URL } from '@/utils/api';
 
 export default function CreateStartupPage() {
   const { user, loading: authLoading } = useAuth();
@@ -49,7 +50,7 @@ export default function CreateStartupPage() {
         payload.contactEmail = user.email;
       }
 
-      const res = await fetch('http://localhost:3000/api/startups', {
+      const res = await fetch(`${API_URL}/api/startups`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

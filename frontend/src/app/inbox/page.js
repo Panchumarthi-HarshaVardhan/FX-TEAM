@@ -34,11 +34,14 @@ import {
   Loader2,
   Reply,
   FolderOpen,
-  Rocket
+  Rocket,
+  Video,
+  Calendar
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { API_URL } from '@/utils/api';
 
 export default function MailboxPage() {
   const { user, token, loading: authLoading } = useAuth();
@@ -98,6 +101,16 @@ export default function MailboxPage() {
     equity: ''
   });
 
+  // Schedule Meeting Modal State
+  const [meetingModalOpen, setMeetingModalOpen] = useState(false);
+  const [meetingForm, setMeetingForm] = useState({
+    title: '',
+    date: '',
+    startTime: '',
+    endTime: '',
+    agenda: ''
+  });
+
   // Load mails and counts
   useEffect(() => {
     if (token && user) {
@@ -110,7 +123,7 @@ export default function MailboxPage() {
   const fetchMails = async (folder) => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/mail/${folder}`, {
+      const res = await fetch(`${API_URL}/api/mail/${folder}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -136,8 +149,8 @@ export default function MailboxPage() {
     try {
       const headers = { Authorization: `Bearer ${token}` };
       const [inboxRes, requestsRes] = await Promise.all([
-        fetch('http://localhost:3000/api/mail/inbox', { headers }),
-        fetch('http://localhost:3000/api/mail/requests', { headers })
+        fetch(`${API_URL}/api/mail/inbox`, { headers }),
+        fetch(`${API_URL}/api/mail/requests`, { headers })
       ]);
       const inboxData = await inboxRes.json();
       const requestsData = await requestsRes.json();
@@ -153,7 +166,7 @@ export default function MailboxPage() {
 
   const fetchOwnedStartups = async () => {
     try {
-      const res = await fetch('http://localhost:3000/api/dashboard/founder', {
+      const res = await fetch(`${API_URL}/api/dashboard/founder`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -170,7 +183,7 @@ export default function MailboxPage() {
     
     // Fetch full populated details from API
     try {
-      const res = await fetch(`http://localhost:3000/api/mail/${mail._id}`, {
+      const res = await fetch(`${API_URL}/api/mail/${mail._id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -184,7 +197,7 @@ export default function MailboxPage() {
     // Mark as read if received and unread
     if (!mail.isRead && mail.receiverId?._id === user.id) {
       try {
-        const res = await fetch(`http://localhost:3000/api/mail/${mail._id}/read`, {
+        const res = await fetch(`${API_URL}/api/mail/${mail._id}/read`, {
           method: 'PATCH',
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -204,7 +217,7 @@ export default function MailboxPage() {
   const handleToggleStar = async (e, mailId) => {
     e.stopPropagation();
     try {
-      const res = await fetch(`http://localhost:3000/api/mail/${mailId}/star`, {
+      const res = await fetch(`${API_URL}/api/mail/${mailId}/star`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -223,7 +236,7 @@ export default function MailboxPage() {
 
   const handleArchiveMail = async (mailId) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/mail/${mailId}/archive`, {
+      const res = await fetch(`${API_URL}/api/mail/${mailId}/archive`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -240,7 +253,7 @@ export default function MailboxPage() {
 
   const handleDeleteMail = async (mailId) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/mail/${mailId}`, {
+      const res = await fetch(`${API_URL}/api/mail/${mailId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -257,7 +270,7 @@ export default function MailboxPage() {
 
   const handleRestoreMail = async (mailId) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/mail/${mailId}/restore`, {
+      const res = await fetch(`${API_URL}/api/mail/${mailId}/restore`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -287,7 +300,7 @@ export default function MailboxPage() {
     setUserSearching(true);
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/mail/users/search?q=${val}`, {
+        const res = await fetch(`${API_URL}/api/mail/users/search?q=${val}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
@@ -326,7 +339,7 @@ export default function MailboxPage() {
 
     setActionLoading(true);
     try {
-      const res = await fetch('http://localhost:3000/api/mail/compose', {
+      const res = await fetch('${API_URL}/api/mail/compose', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -375,7 +388,7 @@ export default function MailboxPage() {
 
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/mail/${selectedMail._id}/reply`, {
+      const res = await fetch(`${API_URL}/api/mail/${selectedMail._id}/reply`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -404,7 +417,7 @@ export default function MailboxPage() {
   const handleAcceptRequest = async (mailId) => {
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/mail/${mailId}/accept`, {
+      const res = await fetch(`${API_URL}/api/mail/${mailId}/accept`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -415,7 +428,7 @@ export default function MailboxPage() {
         fetchMails(currentFolder);
         fetchCounts();
         if (selectedMail && selectedMail._id === mailId) {
-          const detailRes = await fetch(`http://localhost:3000/api/mail/${mailId}`, {
+          const detailRes = await fetch(`${API_URL}/api/mail/${mailId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           const detailData = await detailRes.json();
@@ -434,7 +447,7 @@ export default function MailboxPage() {
   const handleRejectRequest = async (mailId) => {
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/mail/${mailId}/reject`, {
+      const res = await fetch(`${API_URL}/api/mail/${mailId}/reject`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -444,7 +457,7 @@ export default function MailboxPage() {
         fetchMails(currentFolder);
         fetchCounts();
         if (selectedMail && selectedMail._id === mailId) {
-          const detailRes = await fetch(`http://localhost:3000/api/mail/${mailId}`, {
+          const detailRes = await fetch(`${API_URL}/api/mail/${mailId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           const detailData = await detailRes.json();
@@ -463,7 +476,7 @@ export default function MailboxPage() {
   const handleConnectRequest = async (mailId) => {
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/mail/${mailId}/connect`, {
+      const res = await fetch(`${API_URL}/api/mail/${mailId}/connect`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -473,7 +486,7 @@ export default function MailboxPage() {
         fetchMails(currentFolder);
         fetchCounts();
         if (selectedMail && selectedMail._id === mailId) {
-          const detailRes = await fetch(`http://localhost:3000/api/mail/${mailId}`, {
+          const detailRes = await fetch(`${API_URL}/api/mail/${mailId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           const detailData = await detailRes.json();
@@ -492,7 +505,7 @@ export default function MailboxPage() {
   const handleInterviewRequest = async (mailId) => {
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/mail/${mailId}/interview`, {
+      const res = await fetch(`${API_URL}/api/mail/${mailId}/interview`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -502,7 +515,7 @@ export default function MailboxPage() {
         fetchMails(currentFolder);
         fetchCounts();
         if (selectedMail && selectedMail._id === mailId) {
-          const detailRes = await fetch(`http://localhost:3000/api/mail/${mailId}`, {
+          const detailRes = await fetch(`${API_URL}/api/mail/${mailId}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
           const detailData = await detailRes.json();
@@ -518,13 +531,89 @@ export default function MailboxPage() {
     }
   };
 
+  const handleScheduleMeetingSubmit = async (e) => {
+    e.preventDefault();
+    if (!selectedMail) return;
+    
+    setActionLoading(true);
+    try {
+      const targetUserId = selectedMail.senderId?._id === user.id 
+        ? selectedMail.receiverId?._id 
+        : selectedMail.senderId?._id;
+
+      const res = await fetch(`${API_URL}/api/meetings`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: meetingForm.title,
+          agenda: meetingForm.agenda,
+          participants: [targetUserId],
+          scheduledDate: meetingForm.date,
+          startTime: meetingForm.startTime,
+          endTime: meetingForm.endTime,
+          startupId: selectedMail.relatedStartupId?._id || undefined,
+          mailThreadId: selectedMail._id
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        addToast('Meeting scheduled and invite sent!', 'success');
+        setMeetingModalOpen(false);
+        setMeetingForm({ title: '', date: '', startTime: '', endTime: '', agenda: '' });
+        fetchMails(currentFolder);
+      } else {
+        addToast(data.error || 'Failed to schedule meeting', 'error');
+      }
+    } catch (err) {
+      addToast('Error scheduling meeting', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleMeetingResponse = async (meetingId, mailId, status) => {
+    setActionLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/meetings/${meetingId}/respond`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ status, mailId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        addToast(`Meeting ${status} successfully!`, 'success');
+        fetchMails(currentFolder);
+        fetchCounts();
+        if (selectedMail && selectedMail._id === mailId) {
+          const detailRes = await fetch(`${API_URL}/api/mail/${mailId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const detailData = await detailRes.json();
+          if (detailData.success) setSelectedMail(detailData.data);
+        }
+      } else {
+        addToast(data.error || 'Failed to respond to meeting', 'error');
+      }
+    } catch (err) {
+      addToast('Error responding to meeting', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleMarkInvestedSubmit = async (e) => {
     e.preventDefault();
     if (!selectedMail) return;
     
     setActionLoading(true);
     try {
-      const res = await fetch(`http://localhost:3000/api/mail/${selectedMail._id}/mark-invested`, {
+      const res = await fetch(`${API_URL}/api/mail/${selectedMail._id}/mark-invested`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -542,7 +631,7 @@ export default function MailboxPage() {
         setInvestedForm({ amount: '', equity: '' });
         fetchMails(currentFolder);
         // Refresh selectedMail details
-        const detailRes = await fetch(`http://localhost:3000/api/mail/${selectedMail._id}`, {
+        const detailRes = await fetch(`${API_URL}/api/mail/${selectedMail._id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const detailData = await detailRes.json();
@@ -1026,7 +1115,7 @@ export default function MailboxPage() {
                 {/* Context-aware Actions Panel */}
                 <div className="pt-6 border-t border-gray-150 space-y-4">
                   {/* Action buttons for pending actionable requests */}
-                  {selectedMail.actionStatus === 'pending' && selectedMail.receiverId?._id === user.id && (
+                  {selectedMail.actionStatus === 'pending' && (selectedMail.receiverId?._id === user.id || selectedMail.receiverId?._id === user._id) && (
                     <div className="bg-yellow-50/50 p-4 rounded-xl border border-yellow-200/60 space-y-3">
                       <div className="flex items-center gap-2 text-yellow-800 text-xs font-bold uppercase">
                         <AlertCircle className="h-4 w-4" />
@@ -1117,22 +1206,105 @@ export default function MailboxPage() {
                         {/* GENERAL REQUESTS (e.g. meeting_request) */}
                         {selectedMail.type === 'meeting_request' && (
                           <>
-                            <button
-                              onClick={() => handleAcceptRequest(selectedMail._id)}
-                              disabled={actionLoading}
-                              className="px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5 transition cursor-pointer"
-                            >
-                              Accept Meeting
-                            </button>
-                            <button
-                              onClick={() => handleRejectRequest(selectedMail._id)}
-                              disabled={actionLoading}
-                              className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs font-bold shadow-sm transition cursor-pointer"
-                            >
-                              Decline
-                            </button>
+                            {selectedMail.actionStatus === 'pending' && (selectedMail.receiverId?._id === user.id || selectedMail.receiverId?._id === user._id) && (
+                              <>
+                                <button
+                                  onClick={() => handleMeetingResponse(selectedMail.relatedApplicationId, selectedMail._id, 'accepted')}
+                                  disabled={actionLoading}
+                                  className="px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5 transition cursor-pointer"
+                                >
+                                  Accept Meeting
+                                </button>
+                                <button
+                                  onClick={() => handleMeetingResponse(selectedMail.relatedApplicationId, selectedMail._id, 'tentative')}
+                                  disabled={actionLoading}
+                                  className="px-4 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5 transition cursor-pointer"
+                                >
+                                  Tentative
+                                </button>
+                                <button
+                                  onClick={() => handleMeetingResponse(selectedMail.relatedApplicationId, selectedMail._id, 'rejected')}
+                                  disabled={actionLoading}
+                                  className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg text-xs font-bold shadow-sm transition cursor-pointer"
+                                >
+                                  Decline
+                                </button>
+                              </>
+                            )}
                           </>
                         )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Meeting Join Button - always show for meeting requests */}
+                  {selectedMail.type === 'meeting_request' && (
+                    <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-200/60">
+                      <button
+                        onClick={async () => {
+                          try {
+                            // First try to use meetingCode or meetingRoomId from the mail directly!
+                            if (selectedMail.meetingCode) {
+                              router.push(`/meet/${selectedMail.meetingCode}`);
+                              return;
+                            }
+                            if (selectedMail.meetingRoomId) {
+                              router.push(`/meet/${selectedMail.meetingRoomId}`);
+                              return;
+                            }
+                            // Otherwise, fetch all meetings and find the matching one
+                            const msres = await fetch(`${API_URL}/api/meetings`, {
+                              headers: { Authorization: `Bearer ${token}` }
+                            });
+                            const msdata = await msres.json();
+                            const match = msdata.data?.find(m => m._id === selectedMail.relatedApplicationId);
+                            if (match) {
+                              if (match.meetingCode) {
+                                router.push(`/meet/${match.meetingCode}`);
+                              } else if (match.roomId) {
+                                router.push(`/meet/${match.roomId}`);
+                              }
+                            } else {
+                              addToast('Could not find meeting link', 'error');
+                            }
+                          } catch(e) {
+                            console.error(e);
+                          }
+                        }}
+                        className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5 transition cursor-pointer"
+                      >
+                        <Video className="h-4 w-4" />
+                        Join Meeting Room
+                      </button>
+                    </div>
+                  )}
+
+                  {/* General Actions for Accepted Requests */}
+                  {selectedMail.actionStatus === 'accepted' && selectedMail.type !== 'meeting_request' && (
+                    <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/60 space-y-3 mt-4">
+                      <div className="flex items-center gap-2 text-slate-700 text-xs font-bold uppercase">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <span>Request Accepted & Connected</span>
+                      </div>
+                      <div className="flex flex-wrap gap-2.5">
+                        <button
+                          onClick={() => setMeetingModalOpen(true)}
+                          className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5 transition cursor-pointer"
+                        >
+                          <Video className="h-4 w-4" />
+                          Schedule Video Meeting
+                        </button>
+                        <Link
+                          href={`/messages?userId=${
+                            selectedMail.senderId?._id === user.id 
+                              ? selectedMail.receiverId?._id 
+                              : selectedMail.senderId?._id
+                          }`}
+                          className="px-4 py-2.5 bg-white border hover:bg-slate-50 text-slate-700 text-center rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5 transition cursor-pointer"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                          Message
+                        </Link>
                       </div>
                     </div>
                   )}
@@ -1456,6 +1628,109 @@ export default function MailboxPage() {
               </div>
             </form>
 
+          </div>
+        </div>
+      )}
+
+      {/* SCHEDULE MEETING MODAL */}
+      {meetingModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/45 backdrop-blur-xs" onClick={() => setMeetingModalOpen(false)} />
+          <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md flex flex-col z-10 overflow-hidden border">
+            
+            <header className="px-6 py-4 border-b border-gray-200 flex items-center justify-between bg-slate-50">
+              <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
+                <Video className="h-5 w-5 text-blue-600" />
+                Schedule Video Meeting
+              </h3>
+              <button 
+                onClick={() => setMeetingModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </header>
+
+            <form onSubmit={handleScheduleMeetingSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Meeting Title</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Initial Chat"
+                  value={meetingForm.title}
+                  onChange={(e) => setMeetingForm(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Date</label>
+                  <input
+                    type="date"
+                    required
+                    min={new Date().toISOString().split('T')[0]}
+                    value={meetingForm.date}
+                    onChange={(e) => setMeetingForm(prev => ({ ...prev, date: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition"
+                  />
+                </div>
+                <div></div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">Start Time</label>
+                  <input
+                    type="time"
+                    required
+                    value={meetingForm.startTime}
+                    onChange={(e) => setMeetingForm(prev => ({ ...prev, startTime: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-600 block mb-1">End Time</label>
+                  <input
+                    type="time"
+                    required
+                    value={meetingForm.endTime}
+                    onChange={(e) => setMeetingForm(prev => ({ ...prev, endTime: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-600 block mb-1">Agenda</label>
+                <textarea
+                  rows={3}
+                  placeholder="Brief meeting agenda..."
+                  value={meetingForm.agenda}
+                  onChange={(e) => setMeetingForm(prev => ({ ...prev, agenda: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 focus:outline-none transition"
+                />
+              </div>
+
+              <div className="pt-4 border-t flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setMeetingModalOpen(false)}
+                  className="px-4 py-2 border rounded-lg text-xs font-bold hover:bg-slate-50 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-xs transition flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  {actionLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Calendar className="h-3.5 w-3.5" />}
+                  Send Invite
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

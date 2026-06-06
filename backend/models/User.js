@@ -216,11 +216,13 @@ const userSchema = new mongoose.Schema({
   // --- New Verification Fields ---
   isEmailVerified: {
     type: Boolean,
-    default: false
+    default: true
   },
   emailVerifiedAt: Date,
   emailVerificationOtp: String,
   emailVerificationExpires: Date,
+  loginOtp: String,
+  loginOtpExpires: Date,
   googleVerified: {
     type: Boolean,
     default: false

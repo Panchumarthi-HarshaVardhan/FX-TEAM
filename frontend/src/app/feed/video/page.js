@@ -180,7 +180,7 @@ const VideoCard = React.forwardRef(({ post, isActive }, ref) => {
         
         {post.startupId && (
            <div className="flex items-center space-x-2 text-xs bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full w-fit">
-             <span>🚀</span>
+             <span></span>
              <span>{post.startupId.name}</span>
            </div>
         )}

@@ -659,7 +659,7 @@ function InvestorInterestModal({ isOpen, onClose, startupId, onInterestSent }) {
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden p-6 space-y-4">
         <div className="flex justify-between items-center border-b pb-3">
           <h3 className="text-lg font-bold text-slate-900 font-sans">Express Investment Interest</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700"></button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -770,7 +770,7 @@ function RoleRequestModal({ isOpen, onClose, startupId, onRoleRequestSent }) {
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8 overflow-hidden flex flex-col max-h-[90vh]">
         <div className="flex justify-between items-center border-b p-5 flex-shrink-0">
           <h3 className="text-xl font-bold text-slate-900 font-sans">Apply / Send Request</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-lg">✕</button>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-lg"></button>
         </div>
         
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4 font-sans text-sm text-slate-800">

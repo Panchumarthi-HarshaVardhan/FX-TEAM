@@ -135,6 +135,10 @@ export const AuthProvider = ({ children }) => {
       const contentType = res.headers.get('content-type');
       const data = contentType && contentType.includes('application/json') ? await res.json() : {};
 
+      if (res.ok && data.requireOtp) {
+        return { success: true, requireOtp: true, email: data.email };
+      }
+
       if (res.ok && data.token) {
         if (typeof window !== 'undefined') {
           localStorage.setItem('token', data.token);
@@ -241,6 +245,10 @@ export const AuthProvider = ({ children }) => {
       const contentType = res.headers.get('content-type');
       const data = contentType && contentType.includes('application/json') ? await res.json() : {};
 
+      if (res.ok && data.requireOtp) {
+        return { success: true, requireOtp: true, email: data.email };
+      }
+
       if (res.ok && data.token) {
         if (typeof window !== 'undefined') {
           localStorage.setItem('token', data.token);
@@ -278,6 +286,59 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Verify Login OTP
+  const verifyLoginOtp = async (email, otp) => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/verify-login-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ email, otp }),
+      });
+
+      const contentType = res.headers.get('content-type');
+      const data = contentType && contentType.includes('application/json') ? await res.json() : {};
+
+      if (res.ok && data.token) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('token', data.token);
+        }
+        setToken(data.token);
+        setUser(data);
+        
+        // Redirect
+        if (!data.isEmailVerified && data.role !== 'admin') {
+          router.push(`/verify-email?email=${encodeURIComponent(data.email)}`);
+        } else {
+          const needsSetup = !data.profileCompleted && !data.isProfileComplete && data.role !== 'admin';
+          if (needsSetup) {
+            router.push('/profile/setup');
+          } else {
+            if (data.role === 'admin') {
+              router.push('/dashboard/admin');
+            } else if (data.role === 'investor') {
+              router.push('/dashboard/investor');
+            } else if (data.role === 'user' || data.role === 'job_seeker') {
+              router.push('/dashboard/user');
+            } else {
+              router.push('/dashboard/founder');
+            }
+          }
+        }
+        
+        return { success: true };
+      } else {
+        return { success: false, error: data.message || 'Invalid OTP' };
+      }
+    } catch (error) {
+      console.error('OTP verification failed', error);
+      return { success: false, error: 'Network error. Please try again.' };
+    }
+  };
+
   // Logout
   const logout = (redirect = true, message = 'Logged out successfully') => {
     localStorage.removeItem('token');
@@ -288,7 +349,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, token, login, logout, register, googleLogin, loading, refreshUser: checkUserLoggedIn }}>
+    <AuthContext.Provider value={{ user, setUser, token, login, logout, register, googleLogin, verifyLoginOtp, loading, refreshUser: checkUserLoggedIn }}>
       {children}
     </AuthContext.Provider>
   );

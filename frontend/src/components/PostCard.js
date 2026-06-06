@@ -403,19 +403,19 @@ export default function PostCard({ post: initialPost, darkTheme = false, refresh
                   onClick={() => handleInvestorReact('interested')}
                   className="w-full text-left px-3 py-2 hover:bg-green-50 text-sm rounded text-gray-700 font-medium"
                 >
-                  👋 Interested
+                   Interested
                 </button>
                 <button 
                   onClick={() => handleInvestorReact('want_to_invest')}
                   className="w-full text-left px-3 py-2 hover:bg-green-50 text-sm rounded text-gray-700 font-medium"
                 >
-                  💰 Want to Invest
+                   Want to Invest
                 </button>
                 <button 
                   onClick={() => handleInvestorReact('request_deck')}
                   className="w-full text-left px-3 py-2 hover:bg-green-50 text-sm rounded text-gray-700 font-medium"
                 >
-                  📊 Request Deck
+                   Request Deck
                 </button>
               </div>
             )}

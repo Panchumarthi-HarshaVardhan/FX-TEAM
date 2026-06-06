@@ -29,11 +29,13 @@ const teamInvitationRoutes = require('./routes/teamInvitations');
 const adminRoutes = require('./routes/admin');
 const mailRoutes = require('./routes/mail');
 const settingsRoutes = require('./routes/settings');
+const meetingRoutes = require('./routes/meetings');
 
 
 // Import Models for Socket Logic
 const User = require('./models/User');
 const Message = require('./models/Message');
+const Meeting = require('./models/Meeting');
 
 const app = express();
 const server = http.createServer(app);
@@ -175,6 +177,102 @@ io.on('connection', (socket) => {
         }
     }
   });
+
+  // --- WebRTC Meeting Logic ---
+  socket.on('join-meeting', ({ roomId, userId }) => {
+    socket.join(roomId);
+    socket.to(roomId).emit('user-joined', { userId, socketId: socket.id });
+    console.log(`User ${userId} joined meeting room ${roomId}`);
+  });
+
+  socket.on('leave-meeting', ({ roomId, userId }) => {
+    socket.leave(roomId);
+    socket.to(roomId).emit('user-left', { userId, socketId: socket.id });
+    console.log(`User ${userId} left meeting room ${roomId}`);
+  });
+
+  socket.on('webrtc-offer', ({ offer, to, from }) => {
+    io.to(to).emit('webrtc-offer', { offer, from });
+  });
+
+  socket.on('webrtc-answer', ({ answer, to, from }) => {
+    io.to(to).emit('webrtc-answer', { answer, from });
+  });
+
+  socket.on('webrtc-ice-candidate', ({ candidate, to, from }) => {
+    io.to(to).emit('webrtc-ice-candidate', { candidate, from });
+  });
+
+  socket.on('toggle-mic', ({ roomId, userId, isMuted }) => {
+    socket.to(roomId).emit('toggle-mic', { userId, isMuted });
+  });
+
+  socket.on('toggle-camera', ({ roomId, userId, isVideoOff }) => {
+    socket.to(roomId).emit('toggle-camera', { userId, isVideoOff });
+  });
+
+  socket.on('meeting-chat-message', ({ roomId, message }) => {
+    io.to(roomId).emit('meeting-chat-message', message);
+  });
+
+  socket.on('meeting-reaction', ({ roomId, userId, reaction }) => {
+    io.to(roomId).emit('meeting-reaction', { userId, reaction });
+  });
+
+  socket.on('meeting-hand-raise', ({ roomId, userId, isRaised }) => {
+    io.to(roomId).emit('meeting-hand-raise', { userId, isRaised });
+  });
+
+  // --- Meeting Waiting Room Logic ---
+  socket.on('request-to-join-meeting', async ({ meetingId, user }) => {
+    // meetingId is the Mongo _id of the Meeting
+    try {
+      const meeting = await Meeting.findById(meetingId);
+      if (meeting) {
+        if (!meeting.waitingUsers.includes(user._id)) {
+          meeting.waitingUsers.push(user._id);
+          await meeting.save();
+        }
+        // Emit to the host directly if they are in the meeting room
+        io.to(meeting.roomId).emit('meeting-join-request', { user });
+      }
+    } catch (err) {
+      console.error('Error in request-to-join-meeting:', err);
+    }
+  });
+
+  socket.on('admit-user', async ({ meetingId, userId, socketId }) => {
+    try {
+      const meeting = await Meeting.findById(meetingId);
+      if (meeting) {
+        meeting.waitingUsers = meeting.waitingUsers.filter(id => id.toString() !== userId);
+        if (!meeting.admittedUsers.includes(userId)) {
+          meeting.admittedUsers.push(userId);
+        }
+        await meeting.save();
+        io.to(meeting.roomId).emit('user-admitted', { userId });
+      }
+    } catch (err) {
+      console.error('Error in admit-user:', err);
+    }
+  });
+
+  socket.on('reject-user', async ({ meetingId, userId }) => {
+    try {
+      const meeting = await Meeting.findById(meetingId);
+      if (meeting) {
+        meeting.waitingUsers = meeting.waitingUsers.filter(id => id.toString() !== userId);
+        if (!meeting.rejectedUsers.includes(userId)) {
+          meeting.rejectedUsers.push(userId);
+        }
+        await meeting.save();
+        io.to(meeting.roomId).emit('user-rejected', { userId });
+      }
+    } catch (err) {
+      console.error('Error in reject-user:', err);
+    }
+  });
+
 });
 
 const PORT = process.env.PORT || 5000;
@@ -257,6 +355,7 @@ app.use('/api/job-seeker', require('./routes/jobSeeker'));
 app.use('/api/user', require('./routes/jobSeeker'));
 app.use('/api/founder', require('./routes/founder'));
 app.use('/api/settings', settingsRoutes);
+app.use('/api/meetings', meetingRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

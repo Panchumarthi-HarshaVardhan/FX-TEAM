@@ -75,7 +75,7 @@ function StartupCard({ startup, onFollow, onSave, onViewJobs, onShowInterest, on
               }`}
               title={isSaved ? "Unsave Startup" : "Save Startup"}
             >
-              ★
+              
             </button>
           )}
           <span className="px-2.5 py-1 bg-white/80 backdrop-blur-sm text-[10px] font-bold uppercase tracking-wider text-slate-600 rounded-lg shadow-sm">
@@ -203,7 +203,7 @@ function StartupCard({ startup, onFollow, onSave, onViewJobs, onShowInterest, on
                     disabled 
                     className="w-full px-3 py-2 bg-slate-100 border border-slate-200 text-slate-400 font-bold text-xs rounded-xl cursor-not-allowed"
                   >
-                    Message Founder 🔒
+                    Message Founder 
                   </button>
                   <div className="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 bg-slate-900 text-white text-[10px] font-medium p-2.5 rounded-lg shadow-xl opacity-0 group-hover/tooltip:opacity-100 transition duration-150 text-center leading-normal z-20">
                     Messaging unlocks after your application is accepted or when both users follow each other.
@@ -591,7 +591,7 @@ export default function StartupsPage() {
           {/* Top row */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-black text-slate-900 leading-tight">Discover the next unicorn 🚀</h1>
+              <h1 className="text-3xl font-black text-slate-900 leading-tight">Discover the next unicorn </h1>
               <p className="text-sm text-slate-500 font-semibold mt-1">Find and connect with promising startups and apply to roles matching your skills.</p>
             </div>
             
@@ -894,7 +894,7 @@ export default function StartupsPage() {
                 onClick={() => setJobsModalOpen(false)} 
                 className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-slate-600 transition"
               >
-                ✕
+                
               </button>
             </div>
             
@@ -935,7 +935,7 @@ export default function StartupsPage() {
                             disabled
                             className="px-4 py-1.5 bg-green-50 text-green-700 border border-green-205 font-bold text-xs rounded-xl cursor-not-allowed flex items-center gap-1"
                           >
-                            ✓ Applied
+                             Applied
                           </button>
                         ) : (
                           <button

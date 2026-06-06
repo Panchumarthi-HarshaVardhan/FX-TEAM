@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sparkles, 
@@ -133,6 +133,205 @@ export default function FounderXAssistant() {
   // FULLSCREEN STATE
   const [isFullScreen, setIsFullScreen] = useState(false);
 
+  // DRAG LOGO STATE
+  const pathname = usePathname();
+  const isMeetPage = pathname?.startsWith('/meet/');
+  const [logoPosition, setLogoPosition] = useState({ x: 0, y: isMeetPage ? -80 : 0 });
+  const [isDraggingLogo, setIsDraggingLogo] = useState(false);
+
+  useEffect(() => {
+    const savedPos = localStorage.getItem('founderx_chatbot_logo_pos');
+    if (savedPos) {
+      try {
+        setLogoPosition(JSON.parse(savedPos));
+      } catch(e) {}
+    } else if (isMeetPage) {
+      setLogoPosition({ x: 0, y: -80 });
+    } else {
+      setLogoPosition({ x: 0, y: 0 });
+    }
+'use client';
+
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Sparkles, 
+  Trash2, 
+  Sun, 
+  Moon, 
+  Rocket, 
+  Users, 
+  TrendingUp, 
+  ArrowRight, 
+  MessageCircle,
+  X, 
+  Send,
+  ShieldCheck,
+  AlertTriangle,
+  FileText,
+  Loader2,
+  CheckCircle2,
+  Mail,
+  FolderPlus,
+  Video,
+  PenTool,
+  UploadCloud,
+  Paperclip,
+  History,
+  Plus,
+  Mic,
+  MicOff,
+  Volume2,
+  Square,
+  Search,
+  Maximize2,
+  Minimize2,
+  Headphones
+} from 'lucide-react';
+import { 
+  getAssistantResponse, 
+  normalizeIndustry, 
+  optimizeStartupDescription, 
+  generateStartupHashtags,
+  optimizeFounderBio,
+  formatTrendingPostTags
+} from '../utils/mentorAgent';
+import { useAuth } from '../context/AuthContext';
+import { getSafeImageSrc, getSafeInitial } from '../utils/helpers';
+
+export default function FounderXAssistant() {
+  const router = useRouter();
+  const { user, token } = useAuth();
+  
+  // GENERAL INTERFACE STATE
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [inputValue, setInputValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [hasUnread, setHasUnread] = useState(true);
+  const [theme, setTheme] = useState('light');
+  const [errorState, setErrorState] = useState(null);
+  
+  // MULTI-SESSION HISTORY STATE
+  const [sessions, setSessions] = useState([]);
+  const [activeSessionId, setActiveSessionId] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
+  
+  // ACTION OPERATOR MULTI-FLOW STATE MACHINE
+  const [activeAction, setActiveAction] = useState(null); // 'CREATE_STARTUP' | 'CREATE_POST' | 'EDIT_PROFILE' | 'UPLOAD_PITCH' | 'UPLOAD_VIDEO' | 'CREATE_STARTUP_PLAN' | 'GENERATE_PITCH' | 'MATCH_INVESTORS' | 'GENERATE_POST' | 'GENERATE_OUTREACH' | 'STARTUP_SCORE' | null
+  const [formStep, setFormStep] = useState(0); 
+
+  // COLLECTED DATA MODELS
+  const [startupData, setStartupData] = useState({ name: '', oneLinePitch: '', description: '', industry: '', stage: '', contactEmail: '' });
+  const [postData, setPostData] = useState({ title: '', content: '', tags: '' });
+  const [profileData, setProfileData] = useState({ role: '', skills: '', bio: '' });
+  const [pitchData, setPitchData] = useState({ title: '', fileName: '', fileSize: '' });
+  const [videoData, setVideoData] = useState({ title: '', description: '', fileName: '', fileSize: '' });
+
+  // HACKATHON DEMO AI OPERATOR MODELS
+  const [startupPlanData, setStartupPlanData] = useState({ name: '', description: '', targetMarket: '', uvp: '', revenueModel: '' });
+  const [pitchGeneratorData, setPitchGeneratorData] = useState({ name: '', description: '', targetMarket: '', uvp: '', revenueModel: '' });
+  const [investorMatchData, setInvestorMatchData] = useState({ name: '', stage: '', targetMarket: '', fundingNeed: '' });
+  const [outreachData, setOutreachData] = useState({ investorName: '', startupName: '', uvp: '', oneLinePitch: '' });
+  const [startupScoreData, setStartupScoreData] = useState({ name: '', description: '', targetMarket: '', uvp: '', revenueModel: '' });
+  
+  const [expandedPlans, setExpandedPlans] = useState({});
+  const [activeDocViewer, setActiveDocViewer] = useState(null);
+
+  // MOCK FILE DRAG-AND-DROP ACTIVE STATES
+  const [isDragging, setIsDragging] = useState(false);
+
+  // AI STARTUP CONTENT ASSISTANT MVP STATES
+  const [pendingMedia, setPendingMedia] = useState(null); // { url, name, type }
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const [isEditingPostId, setIsEditingPostId] = useState(null);
+  const [editedPost, setEditedPost] = useState(null); // { title, description, hashtags, cta, imageConcept }
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [generatedImage, setGeneratedImage] = useState(null);
+  const [schedulingPostId, setSchedulingPostId] = useState(null);
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('');
+  const [publishingPostId, setPublishingPostId] = useState(null);
+  
+  // API PUBLISHING FLOW CONTROLLER
+  const [publishingState, setPublishingState] = useState('idle'); // 'idle' | 'loading' | 'success' | 'draft_saved' | 'auth_required'
+  const [publishingMessage, setPublishingMessage] = useState('');
+
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // VOICE INPUT STATE
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
+  const voiceRecognitionRef = useRef(null);
+  const silenceTimerRef = useRef(null);
+  const transcriptRef = useRef('');
+  
+  // CONTINUOUS VOICE MODE
+  const [isContinuousMode, setIsContinuousMode] = useState(false);
+  const isContinuousModeRef = useRef(false);
+
+  // VOICE OUTPUT (TTS) STATE
+  const [speakingMsgId, setSpeakingMsgId] = useState(null);
+  const [selectedLang, setSelectedLang] = useState('en-IN');
+  const usedVoiceInput = useRef(false);
+
+  // FULLSCREEN STATE
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
+  // DRAG LOGO STATE
+  const pathname = usePathname();
+  const isMeetPage = pathname?.startsWith('/meet/');
+  const [logoPosition, setLogoPosition] = useState({ x: 0, y: isMeetPage ? -80 : 0 });
+  const [isDraggingLogo, setIsDraggingLogo] = useState(false);
+
+  useEffect(() => {
+    const savedPos = localStorage.getItem('founderx_chatbot_logo_pos');
+    if (savedPos) {
+      try {
+        setLogoPosition(JSON.parse(savedPos));
+      } catch(e) {}
+    } else if (isMeetPage) {
+      setLogoPosition({ x: 0, y: -80 });
+    } else {
+      setLogoPosition({ x: 0, y: 0 });
+    }
+  }, [isMeetPage]);
+
+  const handleLogoDragStart = () => {
+    setIsDraggingLogo(true);
+  };
+
+  const handleLogoDragEnd = (event, info) => {
+    setTimeout(() => setIsDraggingLogo(false), 100);
+    let newX = logoPosition.x + info.offset.x;
+    let newY = logoPosition.y + info.offset.y;
+    // Clamp within viewport (56px button size)
+    const maxX = window.innerWidth - 56;
+    const maxY = window.innerHeight - 56;
+    if (newX < 0) newX = 0;
+    if (newY < 0) newY = 0;
+    if (newX > maxX) newX = maxX;
+    if (newY > maxY) newY = maxY;
+    const newPosition = { x: newX, y: newY };
+    setLogoPosition(newPosition);
+    localStorage.setItem('founderx_chatbot_logo_pos', JSON.stringify(newPosition));
+  };
+
+  const handleLogoClick = (e) => {
+    if (isDraggingLogo) {
+      e.preventDefault();
+      return;
+    }
+    toggleOpen();
+  };
+
   // BARGE-IN DETECTION (SpeechRecognition during TTS)
   const speechRecognitionRef = useRef(null);
   const bargeInActiveRef = useRef(false);
@@ -153,7 +352,7 @@ export default function FounderXAssistant() {
   const welcomeMessage = {
     id: 'welcome',
     sender: 'ai',
-    text: `🚀 **Welcome to FounderX AI Startup Copilot**\n\nI am your professional AI Content Assistant. I can automatically generate startup updates, launch announcements, hiring posts, funding milestones, or investor pitch decks. Choose a tool below to begin:`,
+    text: ` **Welcome to FounderX AI Startup Copilot**\n\nI am your professional AI Content Assistant. I can automatically generate startup updates, launch announcements, hiring posts, funding milestones, or investor pitch decks. Choose a tool below to begin:`,
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     actions: quickActions
   };
@@ -415,7 +614,7 @@ export default function FounderXAssistant() {
     const cancelMsg = {
       id: Date.now().toString(),
       sender: 'ai',
-      text: "❌ **Action Cancelled**\n\nI have cancelled the active process and cleared your inputs. What else can I help you operate or find on FounderX?",
+      text: " **Action Cancelled**\n\nI have cancelled the active process and cleared your inputs. What else can I help you operate or find on FounderX?",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       actions: quickActions
     };
@@ -437,37 +636,37 @@ export default function FounderXAssistant() {
 
     if (actionType === 'CREATE_STARTUP') {
       setStartupData({ name: '', oneLinePitch: '', description: '', industry: '', stage: '', contactEmail: '' });
-      textPrompt = "🚀 **FounderX AI Operator Activated**\n\nGreat choice! Let's build your professional **Startup Profile** on FounderX. I will guide you through this step-by-step to optimize your details for VCs.\n\nFirst, **what is your startup name?**";
+      textPrompt = " **FounderX AI Operator Activated**\n\nGreat choice! Let's build your professional **Startup Profile** on FounderX. I will guide you through this step-by-step to optimize your details for VCs.\n\nFirst, **what is your startup name?**";
     } else if (actionType === 'CREATE_POST') {
       setPostData({ title: '', content: '', tags: '' });
-      textPrompt = "🚀 **FounderX AI Operator Activated**\n\nAwesome! Let's write and publish an engaging **Startup Update Post** to the global feed.\n\nFirst, **what is the title of your post?**";
+      textPrompt = " **FounderX AI Operator Activated**\n\nAwesome! Let's write and publish an engaging **Startup Update Post** to the global feed.\n\nFirst, **what is the title of your post?**";
     } else if (actionType === 'EDIT_PROFILE') {
       setProfileData({ role: '', skills: '', bio: '' });
-      textPrompt = "🚀 **FounderX AI Operator Activated**\n\nOutstanding! Let's optimize your **Founder Profile** details.\n\nFirst, **what is your current role/job title?** (e.g. Founder & CEO, Tech Architect)";
+      textPrompt = " **FounderX AI Operator Activated**\n\nOutstanding! Let's optimize your **Founder Profile** details.\n\nFirst, **what is your current role/job title?** (e.g. Founder & CEO, Tech Architect)";
     } else if (actionType === 'UPLOAD_PITCH') {
       setPitchData({ title: '', fileName: '', fileSize: '' });
-      textPrompt = "🚀 **FounderX AI Operator Activated**\n\nExcellent decision! Let's publish your **Pitch Presentation Deck** to your profile to capture investor attention.\n\nFirst, **what is the title of this pitch deck?** (e.g. Seed Overview, Core Pitch)";
+      textPrompt = " **FounderX AI Operator Activated**\n\nExcellent decision! Let's publish your **Pitch Presentation Deck** to your profile to capture investor attention.\n\nFirst, **what is the title of this pitch deck?** (e.g. Seed Overview, Core Pitch)";
     } else if (actionType === 'UPLOAD_VIDEO') {
       setVideoData({ title: '', description: '', fileName: '', fileSize: '' });
-      textPrompt = "🚀 **FounderX AI Operator Activated**\n\nSplendid! Vertical pitch videos get **4.5x more click-throughs** on the Watch feed.\n\nFirst, **what is the title of your vertical pitch video?** (e.g. 60-Second Elevator Pitch)";
+      textPrompt = " **FounderX AI Operator Activated**\n\nSplendid! Vertical pitch videos get **4.5x more click-throughs** on the Watch feed.\n\nFirst, **what is the title of your vertical pitch video?** (e.g. 60-Second Elevator Pitch)";
     } else if (actionType === 'CREATE_STARTUP_PLAN') {
       setStartupPlanData({ name: '', description: '', targetMarket: '', uvp: '', revenueModel: '' });
-      textPrompt = "🚀 **Startup Plan Builder**\nStep 1 of 6\n\nWhat is your **startup name**?";
+      textPrompt = " **Startup Plan Builder**\nStep 1 of 6\n\nWhat is your **startup name**?";
     } else if (actionType === 'GENERATE_PITCH') {
       setPitchGeneratorData({ name: '', description: '', targetMarket: '', uvp: '', revenueModel: '' });
-      textPrompt = "🚀 **AI Pitch Generator**\nStep 1 of 5\n\nWhat is your **startup name**?";
+      textPrompt = " **AI Pitch Generator**\nStep 1 of 5\n\nWhat is your **startup name**?";
     } else if (actionType === 'MATCH_INVESTORS') {
       setInvestorMatchData({ name: '', stage: 'Idea Stage', targetMarket: '', fundingNeed: '' });
-      textPrompt = "🚀 **AI Investor Match Assistant**\nStep 1 of 5\n\nWhat is your **startup name**?";
+      textPrompt = " **AI Investor Match Assistant**\nStep 1 of 5\n\nWhat is your **startup name**?";
     } else if (actionType === 'GENERATE_POST') {
       setPostData({ title: '', content: '', tags: '' }); // Uses shared postData for final submit!
-      textPrompt = "🚀 **AI Post Generator**\n\nEnter a **rough update or startup idea** (e.g. 'we hit 10k users and launched a new referral code') and I will write a high-engagement social post for you!";
+      textPrompt = " **AI Post Generator**\n\nEnter a **rough update or startup idea** (e.g. 'we hit 10k users and launched a new referral code') and I will write a high-engagement social post for you!";
     } else if (actionType === 'GENERATE_OUTREACH') {
       setOutreachData({ investorName: '', startupName: '', uvp: '', oneLinePitch: '' });
-      textPrompt = "🚀 **AI Investor Outreach Message**\nStep 1 of 3\n\nWhat is the **name of the investor or VC fund** you are reaching out to?";
+      textPrompt = " **AI Investor Outreach Message**\nStep 1 of 3\n\nWhat is the **name of the investor or VC fund** you are reaching out to?";
     } else if (actionType === 'STARTUP_SCORE') {
       setStartupScoreData({ name: '', description: '', targetMarket: '', uvp: '', revenueModel: '' });
-      textPrompt = "🚀 **AI Startup Score**\nStep 1 of 5\n\nWhat is your **startup name**?";
+      textPrompt = " **AI Startup Score**\nStep 1 of 5\n\nWhat is your **startup name**?";
     }
 
     const triggerMsg = {
@@ -781,7 +980,7 @@ export default function FounderXAssistant() {
     const userMsg = {
       id: Date.now().toString(),
       sender: 'user',
-      text: actualText || '🎤 Voice Message',
+      text: actualText || ' Voice Message',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       media: pendingMedia || (directAudioFile ? { name: 'Voice Note', type: 'audio' } : null)
     };
@@ -1064,7 +1263,7 @@ Format the response beautifully as a Startup Lean Canvas and Execution Roadmap. 
         const planMsg = {
           id: Date.now().toString(),
           sender: 'ai',
-          text: `🎉 **Startup Plan Generated!**\n\nI have created a premium, custom startup roadmap for **${planData.name}** based on your inputs. Check the interactive plan box below.`,
+          text: ` **Startup Plan Generated!**\n\nI have created a premium, custom startup roadmap for **${planData.name}** based on your inputs. Check the interactive plan box below.`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           type: 'PLAN_PREVIEW',
           previewData: {
@@ -1082,7 +1281,7 @@ Format the response beautifully as a Startup Lean Canvas and Execution Roadmap. 
       console.warn("Live plan generation failed, falling back to local builder:", err);
       setPublishingState('success');
       setPublishingMessage("Generated local fallback Startup Plan.");
-      const fallbackPlanText = `🚀 **Startup Lean Canvas & Plan for ${planData.name}**
+      const fallbackPlanText = ` **Startup Lean Canvas & Plan for ${planData.name}**
 
 **1. Problem & Solution**
 - Description: ${planData.description}
@@ -1105,7 +1304,7 @@ Format the response beautifully as a Startup Lean Canvas and Execution Roadmap. 
       const planMsg = {
         id: Date.now().toString(),
         sender: 'ai',
-        text: `🎉 **Startup Plan Generated (Local Mode)!**\n\nI have generated a local Lean Canvas plan for **${planData.name}**. Check the interactive plan box below.`,
+        text: ` **Startup Plan Generated (Local Mode)!**\n\nI have generated a local Lean Canvas plan for **${planData.name}**. Check the interactive plan box below.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         type: 'PLAN_PREVIEW',
         previewData: {
@@ -1153,7 +1352,7 @@ Startup Details:
         const pitchMsg = {
           id: Date.now().toString(),
           sender: 'ai',
-          text: `🎉 **AI Pitch Suite Generated!**\n\nI have generated a custom Elevator Pitch, Tagline, and Slide Outline for **${pitchDataObj.name}**. Review details below.`,
+          text: ` **AI Pitch Suite Generated!**\n\nI have generated a custom Elevator Pitch, Tagline, and Slide Outline for **${pitchDataObj.name}**. Review details below.`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           type: 'PITCH_PREVIEW',
           previewData: {
@@ -1171,7 +1370,7 @@ Startup Details:
       console.warn("Live pitch generation failed, falling back to local builder:", err);
       setPublishingState('success');
       setPublishingMessage("Generated local fallback Pitch Suite.");
-      const fallbackPitchText = `🚀 **Pitch Suite for ${pitchDataObj.name}**
+      const fallbackPitchText = ` **Pitch Suite for ${pitchDataObj.name}**
 
 **1. One-Line Tagline**
 "10x faster ${pitchDataObj.description.toLowerCase().replace(/\./g, '')} for ${pitchDataObj.targetMarket} powered by next-generation automation."
@@ -1194,7 +1393,7 @@ Startup Details:
       const pitchMsg = {
         id: Date.now().toString(),
         sender: 'ai',
-        text: `🎉 **AI Pitch Suite Generated (Local Fallback)!**\n\nI have structured a premium pitch suite based on your startup. Review details below.`,
+        text: ` **AI Pitch Suite Generated (Local Fallback)!**\n\nI have structured a premium pitch suite based on your startup. Review details below.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         type: 'PITCH_PREVIEW',
         previewData: {
@@ -1238,7 +1437,7 @@ Structure the output as a neat recommendation with scores and match reasons.`;
         const matchMsg = {
           id: Date.now().toString(),
           sender: 'ai',
-          text: `🎉 **Investor Matches Formulated!**\n\nI have analyzed your stage and funding requirements to formulate 3 suitable investor classes. Review matches below.`,
+          text: ` **Investor Matches Formulated!**\n\nI have analyzed your stage and funding requirements to formulate 3 suitable investor classes. Review matches below.`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           type: 'MATCH_PREVIEW',
           previewData: {
@@ -1256,7 +1455,7 @@ Structure the output as a neat recommendation with scores and match reasons.`;
       console.warn("Live investor matching failed, falling back to local builder:", err);
       setPublishingState('success');
       setPublishingMessage("Generated local matched Investor Report.");
-      const fallbackMatchText = `🚀 **Investor Matching Report for ${matchDataObj.name}**
+      const fallbackMatchText = ` **Investor Matching Report for ${matchDataObj.name}**
 
 **1. Angel Syndicate Investors**
 - **Match Score**: 94%
@@ -1273,7 +1472,7 @@ Structure the output as a neat recommendation with scores and match reasons.`;
       const matchMsg = {
         id: Date.now().toString(),
         sender: 'ai',
-        text: `🎉 **Investor Matches Formulated (Local Fallback)!**\n\nReview your matched investor report below.`,
+        text: ` **Investor Matches Formulated (Local Fallback)!**\n\nReview your matched investor report below.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         type: 'MATCH_PREVIEW',
         previewData: {
@@ -1314,7 +1513,7 @@ Keep the tone optimistic, traction-focused, and add 3-4 hashtags like #BuildingI
         const postMsg = {
           id: Date.now().toString(),
           sender: 'ai',
-          text: `🎉 **AI Post Formulated!**\n\nI have restructured your rough idea into a premium, traction-focused social update. You can publish it live to the global Community Feed below!`,
+          text: ` **AI Post Formulated!**\n\nI have restructured your rough idea into a premium, traction-focused social update. You can publish it live to the global Community Feed below!`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           type: 'POST_PREVIEW',
           previewData: {
@@ -1332,7 +1531,7 @@ Keep the tone optimistic, traction-focused, and add 3-4 hashtags like #BuildingI
       console.warn("Live social post formatting failed, falling back to local builder:", err);
       setPublishingState('success');
       setPublishingMessage("Generated local fallback Social Post.");
-      const fallbackPostText = `🚀 **Startup Milestone Update!**
+      const fallbackPostText = ` **Startup Milestone Update!**
 
 Exciting news! We are thrilled to share that we just: "${roughUpdateText}"! 
 
@@ -1345,7 +1544,7 @@ Stay tuned for more updates as we ship new features next week!
       const postMsg = {
         id: Date.now().toString(),
         sender: 'ai',
-        text: `🎉 **AI Post Formulated (Local Fallback)!**\n\nI have converted your rough update into a premium social update. You can publish it live below!`,
+        text: ` **AI Post Formulated (Local Fallback)!**\n\nI have converted your rough update into a premium social update. You can publish it live below!`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         type: 'POST_PREVIEW',
         previewData: {
@@ -1388,7 +1587,7 @@ Make sure to include the exact phrase: "I'm interested in your startup. Let's co
         const outreachMsg = {
           id: Date.now().toString(),
           sender: 'ai',
-          text: `🎉 **AI Investor Outreach Message Generated!**\n\nI have generated a high-impact email pitch for **${outreachDataObj.investorName}**. Review outreach copy below.`,
+          text: ` **AI Investor Outreach Message Generated!**\n\nI have generated a high-impact email pitch for **${outreachDataObj.investorName}**. Review outreach copy below.`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           type: 'OUTREACH_PREVIEW',
           previewData: {
@@ -1423,7 +1622,7 @@ ${outreachDataObj.startupName}`;
       const outreachMsg = {
         id: Date.now().toString(),
         sender: 'ai',
-        text: `🎉 **AI Investor Outreach Message Generated (Local Fallback)!**\n\nI have generated a customized outreach letter. Review details below.`,
+        text: ` **AI Investor Outreach Message Generated (Local Fallback)!**\n\nI have generated a customized outreach letter. Review details below.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         type: 'OUTREACH_PREVIEW',
         previewData: {
@@ -1475,7 +1674,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
         const scoreMsg = {
           id: Date.now().toString(),
           sender: 'ai',
-          text: `🎉 **AI Startup Scorecard Calculated!**\n\nI have analyzed your pitch details to formulate a comprehensive investment index and VC scorecard. Review report below.`,
+          text: ` **AI Startup Scorecard Calculated!**\n\nI have analyzed your pitch details to formulate a comprehensive investment index and VC scorecard. Review report below.`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           type: 'SCORE_PREVIEW',
           previewData: {
@@ -1495,7 +1694,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
       console.warn("Live startup score calculation failed, falling back to local builder:", err);
       setPublishingState('success');
       setPublishingMessage("Generated local fallback Startup Scorecard.");
-      const fallbackScoreText = `🚀 **AI Startup Scorecard for ${scoreDataObj.name}**
+      const fallbackScoreText = ` **AI Startup Scorecard for ${scoreDataObj.name}**
 
 **1. Dimensional Index Breakdown (82/100 Overall)**
 - **Problem Clarity**: 17/20 (Clear and painfully defined problem for ${scoreDataObj.targetMarket})
@@ -1512,7 +1711,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
       const scoreMsg = {
         id: Date.now().toString(),
         sender: 'ai',
-        text: `🎉 **AI Startup Scorecard Calculated (Local Fallback)!**\n\nI have compiled a VC scorecard index for **${scoreDataObj.name}**. Review report below.`,
+        text: ` **AI Startup Scorecard Calculated (Local Fallback)!**\n\nI have compiled a VC scorecard index for **${scoreDataObj.name}**. Review report below.`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         type: 'SCORE_PREVIEW',
         previewData: {
@@ -1556,22 +1755,22 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
     const isScorePreview = activeAction === 'STARTUP_SCORE' && formStep === 5;
 
     if (isStartupPreview || isPostPreview || isProfilePreview || isPitchPreview || isVideoPreview) {
-      pushAIMessage(`💡 **FounderX Assistant Guidance**\n\nI have already structured your preview card. Please click **Publish to FounderX** to commit live, **Edit Details** to start over, or **Cancel** to abort this operation.`, ['Cancel'], currentHistory);
+      pushAIMessage(` **FounderX Assistant Guidance**\n\nI have already structured your preview card. Please click **Publish to FounderX** to commit live, **Edit Details** to start over, or **Cancel** to abort this operation.`, ['Cancel'], currentHistory);
       return;
     }
 
     if (isPlanPreview || isPitchGenPreview || isMatchPreview || isPostGenPreview || isOutreachPreview || isScorePreview) {
-      pushAIMessage(`💡 **FounderX AI OS Guidance**\n\nYour details have been generated! Please use the interactive card buttons to **View Full Details**, **Copy**, **Download**, or **Edit** details below.`, ['Cancel'], currentHistory);
+      pushAIMessage(` **FounderX AI OS Guidance**\n\nYour details have been generated! Please use the interactive card buttons to **View Full Details**, **Copy**, **Download**, or **Edit** details below.`, ['Cancel'], currentHistory);
       return;
     }
 
     if (isPitchUploader) {
-      pushAIMessage(`💡 **FounderX Assistant Guidance**\n\nI am waiting for your PDF Pitch Deck. Please drag-and-drop your file inside the uploader card above, or click the uploader card to select a mock file. You can also click **Cancel** to abort.`, ['Cancel'], currentHistory);
+      pushAIMessage(` **FounderX Assistant Guidance**\n\nI am waiting for your PDF Pitch Deck. Please drag-and-drop your file inside the uploader card above, or click the uploader card to select a mock file. You can also click **Cancel** to abort.`, ['Cancel'], currentHistory);
       return;
     }
 
     if (isVideoUploader) {
-      pushAIMessage(`💡 **FounderX Assistant Guidance**\n\nI am waiting for your Watch Pitch Video. Please drag-and-drop your .mp4 file inside the uploader card above, or click the uploader card to select a mock file. You can also click **Cancel** to abort.`, ['Cancel'], currentHistory);
+      pushAIMessage(` **FounderX Assistant Guidance**\n\nI am waiting for your Watch Pitch Video. Please drag-and-drop your .mp4 file inside the uploader card above, or click the uploader card to select a mock file. You can also click **Cancel** to abort.`, ['Cancel'], currentHistory);
       return;
     }
 
@@ -1621,7 +1820,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
           break;
         case 5:
           if (!inputText.includes('@')) {
-            pushAIMessage(`⚠️ Invalid email format. Please provide a valid contact email:`, ['Cancel'], currentHistory);
+            pushAIMessage(` Invalid email format. Please provide a valid contact email:`, ['Cancel'], currentHistory);
             return;
           }
           data.contactEmail = inputText;
@@ -1645,38 +1844,38 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
           data.name = inputText;
           setStartupPlanData(data);
           setFormStep(1);
-          pushAIMessage(`🚀 **Startup Plan Builder**\nStep 2 of 6\n\nWhat is your startup **description**? (What problem do you solve and how?)`, ['Cancel'], currentHistory);
+          pushAIMessage(` **Startup Plan Builder**\nStep 2 of 6\n\nWhat is your startup **description**? (What problem do you solve and how?)`, ['Cancel'], currentHistory);
           break;
         case 1:
           data.description = inputText;
           setStartupPlanData(data);
           setFormStep(2);
-          pushAIMessage(`🚀 **Startup Plan Builder**\nStep 3 of 6\n\nWho is your **target market**? (Who are your ideal customers?)`, ['Cancel'], currentHistory);
+          pushAIMessage(` **Startup Plan Builder**\nStep 3 of 6\n\nWho is your **target market**? (Who are your ideal customers?)`, ['Cancel'], currentHistory);
           break;
         case 2:
           data.targetMarket = inputText;
           setStartupPlanData(data);
           setFormStep(3);
-          pushAIMessage(`🚀 **Startup Plan Builder**\nStep 4 of 6\n\nWhat is your **Unique Value Proposition (UVP)**? (What makes you 10x better than competitors?)`, ['Cancel'], currentHistory);
+          pushAIMessage(` **Startup Plan Builder**\nStep 4 of 6\n\nWhat is your **Unique Value Proposition (UVP)**? (What makes you 10x better than competitors?)`, ['Cancel'], currentHistory);
           break;
         case 3:
           data.uvp = inputText;
           setStartupPlanData(data);
           setFormStep(4);
-          pushAIMessage(`🚀 **Startup Plan Builder**\nStep 5 of 6\n\nWhat is your **revenue model**? (e.g. subscription SaaS, marketplace commission)`, ['Cancel'], currentHistory);
+          pushAIMessage(` **Startup Plan Builder**\nStep 5 of 6\n\nWhat is your **revenue model**? (e.g. subscription SaaS, marketplace commission)`, ['Cancel'], currentHistory);
           break;
         case 4:
           data.revenueModel = inputText;
           setStartupPlanData(data);
           setFormStep(5);
-          pushAIMessage(`🚀 **Startup Plan Builder**\nStep 6 of 6\n\nAll details collected! Click the button below to generate your final Startup Plan using live AI.`, ['Generate Final Plan', 'Cancel'], currentHistory);
+          pushAIMessage(` **Startup Plan Builder**\nStep 6 of 6\n\nAll details collected! Click the button below to generate your final Startup Plan using live AI.`, ['Generate Final Plan', 'Cancel'], currentHistory);
           break;
         case 5:
           if (inputText.toLowerCase().includes('generate') || inputText.toLowerCase().includes('plan')) {
             setFormStep(6);
             generateFinalPlan(data, currentHistory);
           } else {
-            pushAIMessage(`💡 **FounderX Assistant Guidance**\n\nI have collected all details. Please click **Generate Final Plan** to build it using AI, or click **Cancel** to abort.`, ['Generate Final Plan', 'Cancel'], currentHistory);
+            pushAIMessage(` **FounderX Assistant Guidance**\n\nI have collected all details. Please click **Generate Final Plan** to build it using AI, or click **Cancel** to abort.`, ['Generate Final Plan', 'Cancel'], currentHistory);
           }
           break;
       }
@@ -1690,25 +1889,25 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
           data.name = inputText;
           setPitchGeneratorData(data);
           setFormStep(1);
-          pushAIMessage(`🚀 **AI Pitch Generator**\nStep 2 of 5\n\nWhat is your startup **description**? (Problem/Solution summary)`, ['Cancel'], currentHistory);
+          pushAIMessage(` **AI Pitch Generator**\nStep 2 of 5\n\nWhat is your startup **description**? (Problem/Solution summary)`, ['Cancel'], currentHistory);
           break;
         case 1:
           data.description = inputText;
           setPitchGeneratorData(data);
           setFormStep(2);
-          pushAIMessage(`🚀 **AI Pitch Generator**\nStep 3 of 5\n\nWho is your **target market**?`, ['Cancel'], currentHistory);
+          pushAIMessage(` **AI Pitch Generator**\nStep 3 of 5\n\nWho is your **target market**?`, ['Cancel'], currentHistory);
           break;
         case 2:
           data.targetMarket = inputText;
           setPitchGeneratorData(data);
           setFormStep(3);
-          pushAIMessage(`🚀 **AI Pitch Generator**\nStep 4 of 5\n\nWhat is your startup's **Unique Value Proposition (UVP)**?`, ['Cancel'], currentHistory);
+          pushAIMessage(` **AI Pitch Generator**\nStep 4 of 5\n\nWhat is your startup's **Unique Value Proposition (UVP)**?`, ['Cancel'], currentHistory);
           break;
         case 3:
           data.uvp = inputText;
           setPitchGeneratorData(data);
           setFormStep(4);
-          pushAIMessage(`🚀 **AI Pitch Generator**\nStep 5 of 5\n\nWhat is your **revenue model**?`, ['Cancel'], currentHistory);
+          pushAIMessage(` **AI Pitch Generator**\nStep 5 of 5\n\nWhat is your **revenue model**?`, ['Cancel'], currentHistory);
           break;
         case 4:
           data.revenueModel = inputText;
@@ -1727,25 +1926,25 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
           data.name = inputText;
           setInvestorMatchData(data);
           setFormStep(1);
-          pushAIMessage(`🚀 **AI Investor Match Assistant**\nStep 2 of 5\n\nWhat is your startup's current **development stage**?`, ['Idea Stage', 'MVP built', 'First Customer acquired', 'Generating Revenue', 'Cancel'], currentHistory);
+          pushAIMessage(` **AI Investor Match Assistant**\nStep 2 of 5\n\nWhat is your startup's current **development stage**?`, ['Idea Stage', 'MVP built', 'First Customer acquired', 'Generating Revenue', 'Cancel'], currentHistory);
           break;
         case 1:
           data.stage = inputText;
           setInvestorMatchData(data);
           setFormStep(2);
-          pushAIMessage(`🚀 **AI Investor Match Assistant**\nStep 3 of 5\n\nWho is your startup's **target market**?`, ['Cancel'], currentHistory);
+          pushAIMessage(` **AI Investor Match Assistant**\nStep 3 of 5\n\nWho is your startup's **target market**?`, ['Cancel'], currentHistory);
           break;
         case 2:
           data.targetMarket = inputText;
           setInvestorMatchData(data);
           setFormStep(3);
-          pushAIMessage(`🚀 **AI Investor Match Assistant**\nStep 4 of 5\n\nHow much **funding** do you need to raise? (e.g. $150K, $1M)`, ['Cancel'], currentHistory);
+          pushAIMessage(` **AI Investor Match Assistant**\nStep 4 of 5\n\nHow much **funding** do you need to raise? (e.g. $150K, $1M)`, ['Cancel'], currentHistory);
           break;
         case 3:
           data.fundingNeed = inputText;
           setInvestorMatchData(data);
           setFormStep(4);
-          pushAIMessage(`🚀 **AI Investor Match Assistant**\nStep 5 of 5\n\nReady to match with active startup investors? Click below!`, ['Match Me with Investors', 'Cancel'], currentHistory);
+          pushAIMessage(` **AI Investor Match Assistant**\nStep 5 of 5\n\nReady to match with active startup investors? Click below!`, ['Match Me with Investors', 'Cancel'], currentHistory);
           break;
         case 4:
           setFormStep(5);
@@ -1771,13 +1970,13 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
           data.investorName = inputText;
           setOutreachData(data);
           setFormStep(1);
-          pushAIMessage(`🚀 **AI Investor Outreach Message**\nStep 2 of 3\n\nWhat is your **startup name**?`, ['Cancel'], currentHistory);
+          pushAIMessage(` **AI Investor Outreach Message**\nStep 2 of 3\n\nWhat is your **startup name**?`, ['Cancel'], currentHistory);
           break;
         case 1:
           data.startupName = inputText;
           setOutreachData(data);
           setFormStep(2);
-          pushAIMessage(`🚀 **AI Investor Outreach Message**\nStep 3 of 3\n\nWhat is your startup's **Unique Value Proposition (UVP)**?`, ['Cancel'], currentHistory);
+          pushAIMessage(` **AI Investor Outreach Message**\nStep 3 of 3\n\nWhat is your startup's **Unique Value Proposition (UVP)**?`, ['Cancel'], currentHistory);
           break;
         case 2:
           data.uvp = inputText;
@@ -1796,25 +1995,25 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
           data.name = inputText;
           setStartupScoreData(data);
           setFormStep(1);
-          pushAIMessage(`🚀 **AI Startup Score**\nStep 2 of 5\n\nWhat is your startup **description**? (Problem/Solution)`, ['Cancel'], currentHistory);
+          pushAIMessage(` **AI Startup Score**\nStep 2 of 5\n\nWhat is your startup **description**? (Problem/Solution)`, ['Cancel'], currentHistory);
           break;
         case 1:
           data.description = inputText;
           setStartupScoreData(data);
           setFormStep(2);
-          pushAIMessage(`🚀 **AI Startup Score**\nStep 3 of 5\n\nWho is your **target market**?`, ['Cancel'], currentHistory);
+          pushAIMessage(` **AI Startup Score**\nStep 3 of 5\n\nWho is your **target market**?`, ['Cancel'], currentHistory);
           break;
         case 2:
           data.targetMarket = inputText;
           setStartupScoreData(data);
           setFormStep(3);
-          pushAIMessage(`🚀 **AI Startup Score**\nStep 4 of 5\n\nWhat is your startup's **Unique Value Proposition (UVP)**?`, ['Cancel'], currentHistory);
+          pushAIMessage(` **AI Startup Score**\nStep 4 of 5\n\nWhat is your startup's **Unique Value Proposition (UVP)**?`, ['Cancel'], currentHistory);
           break;
         case 3:
           data.uvp = inputText;
           setStartupScoreData(data);
           setFormStep(4);
-          pushAIMessage(`🚀 **AI Startup Score**\nStep 5 of 5\n\nWhat is your startup's **revenue model**?`, ['Cancel'], currentHistory);
+          pushAIMessage(` **AI Startup Score**\nStep 5 of 5\n\nWhat is your startup's **revenue model**?`, ['Cancel'], currentHistory);
           break;
         case 4:
           data.revenueModel = inputText;
@@ -1942,7 +2141,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
     const msg = {
       id: Date.now().toString(),
       sender: 'ai',
-      text: `🎉 **Data Collected & AI Optimized!**\n\nI have structured a premium preview card. Review details and authorize publishing below.`,
+      text: ` **Data Collected & AI Optimized!**\n\nI have structured a premium preview card. Review details and authorize publishing below.`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       type: type,
       previewData: data
@@ -1987,7 +2186,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
           contactEmail: previewData.contactEmail,
           tags: previewData.tags
         };
-        successLog = `🚀 Startup Profile "${previewData.name}" created successfully on the platform!`;
+        successLog = ` Startup Profile "${previewData.name}" created successfully on the platform!`;
         break;
 
       case 'CREATE_POST':
@@ -2000,7 +2199,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
           tags: (previewData.tags || '').split(' ').map(t => t.replace('#', '').trim()).filter(Boolean),
           mediaUrl: previewData.mediaUrl || ''
         };
-        successLog = `📢 Startup update post "${previewData.title}" published successfully to feed!`;
+        successLog = ` Startup update post "${previewData.title}" published successfully to feed!`;
         break;
 
       case 'EDIT_PROFILE':
@@ -2013,7 +2212,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
           bio: previewData.optimizedBio,
           skills: previewData.skills
         };
-        successLog = `👤 Founder profile bio optimized and saved successfully!`;
+        successLog = ` Founder profile bio optimized and saved successfully!`;
         break;
 
       case 'UPLOAD_PITCH':
@@ -2026,7 +2225,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
           fileName: previewData.fileName,
           fileSize: previewData.fileSize
         };
-        successLog = `📂 Pitch Presentation "${previewData.title}" uploaded successfully!`;
+        successLog = ` Pitch Presentation "${previewData.title}" uploaded successfully!`;
         break;
 
       case 'UPLOAD_VIDEO':
@@ -2038,7 +2237,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
           description: previewData.description,
           videoUrl: 'https://cloudinary.com/founderx-video-mock.mp4'
         };
-        successLog = `🎥 Vertical Pitch Video "${previewData.title}" published successfully to Watch feed!`;
+        successLog = ` Vertical Pitch Video "${previewData.title}" published successfully to Watch feed!`;
         break;
     }
 
@@ -2150,6 +2349,9 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
               />
             )}
             <motion.div
+              drag={!isFullScreen}
+              dragMomentum={false}
+              dragElastic={0.1}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -2389,12 +2591,12 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
 
                   if (isPlan || isPitchGen || isMatch || isPostGen || isOutreach || isScore) {
                     const planText = preview.planText || preview.pitchText || preview.matchText || preview.outreachText || preview.scoreText || '';
-                    const titleText = isPlan ? `🚀 Startup Plan: ${preview.startupName}`
-                                    : isPitchGen ? `📢 AI Pitch Suite: ${preview.startupName}`
-                                    : isMatch ? `🤝 Investor Matches: ${preview.startupName}`
-                                    : isPostGen ? `✍️ AI Social Post`
-                                    : isOutreach ? `✉️ Investor Outreach: ${preview.investorName}`
-                                    : `📊 Startup Scorecard: ${preview.startupName}`;
+                    const titleText = isPlan ? ` Startup Plan: ${preview.startupName}`
+                                    : isPitchGen ? ` AI Pitch Suite: ${preview.startupName}`
+                                    : isMatch ? ` Investor Matches: ${preview.startupName}`
+                                    : isPostGen ? ` AI Social Post`
+                                    : isOutreach ? ` Investor Outreach: ${preview.investorName}`
+                                    : ` Startup Scorecard: ${preview.startupName}`;
 
                     const previewLines = planText.split('\n').slice(0, 4).join('\n');
 
@@ -2912,7 +3114,7 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
                           </div>
                           {msg.scheduledAt && (
                             <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 text-[10px] font-bold animate-pulse flex items-center gap-1">
-                              📅 Scheduled: {msg.scheduledAt}
+                               Scheduled: {msg.scheduledAt}
                             </span>
                           )}
                         </div>
@@ -3653,44 +3855,49 @@ Then, provide exactly 3 highly actionable VC improvement suggestions to raise th
         )}
       </AnimatePresence>
 
-      {/* FLOATING ACTION TRIGGER TRIGGER */}
+      {/* FLOATING ACTION TRIGGER */}
       {!(isFullScreen && isOpen) && (
-      <motion.button
-        onClick={toggleOpen}
-        whileHover={{ scale: 1.06, y: -2 }}
-        whileTap={{ scale: 0.95 }}
-        style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          width: '56px',
-          height: '56px',
-          zIndex: 50
-        }}
-        className={`
-          rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(10,102,194,0.38)] border border-white/10 pointer-events-auto
-          ${isOpen 
-            ? 'bg-gradient-to-tr from-slate-700 to-slate-850 text-white' 
-            : 'bg-gradient-to-tr from-blue-600 via-primary to-sky-400 text-white'
-          }
-        `}
-      >
-        {/* Pulsing notifications */}
-        {hasUnread && !isOpen && (
-          <>
-            <span className="absolute inset-0 rounded-full border-4 border-blue-400/40 animate-ping" style={{ animationDuration: '2s' }}></span>
-            <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-rose-500 rounded-full border-2 border-white dark:border-slate-950 flex items-center justify-center text-[8px] font-bold text-white shadow-sm z-10 animate-bounce">
-              1
-            </span>
-          </>
-        )}
-        
-        {isOpen ? (
-          <X className="w-5.5 h-5.5" />
-        ) : (
-          <MessageCircle className="w-5.5 h-5.5" />
-        )}
-      </motion.button>
+        <motion.div
+          drag={true}
+          dragMomentum={false}
+          dragElastic={0.1}
+          onDragStart={handleLogoDragStart}
+          onDragEnd={handleLogoDragEnd}
+          style={{
+            position: 'fixed',
+            left: logoPosition.x,
+            top: logoPosition.y,
+            zIndex: 50,
+            cursor: isDraggingLogo ? 'grabbing' : 'grab'
+          }}
+        >
+          <motion.button
+            onClick={handleLogoClick}
+            whileHover={{ scale: 1.06, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            className={`
+              w-14 h-14 rounded-full flex items-center justify-center shadow-[0_8px_32px_rgba(10,102,194,0.38)] border border-white/10 pointer-events-auto
+              ${isOpen
+                ? 'bg-gradient-to-tr from-slate-700 to-slate-850 text-white'
+                : 'bg-gradient-to-tr from-blue-600 via-primary to-sky-400 text-white'}
+            `}
+          >
+            {/* Pulsing notifications */}
+            {hasUnread && !isOpen && (
+              <>
+                <span className="absolute inset-0 rounded-full border-4 border-blue-400/40 animate-ping" style={{ animationDuration: '2s' }}></span>
+                <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-rose-500 rounded-full border-2 border-white dark:border-slate-950 flex items-center justify-center text-[8px] font-bold text-white shadow-sm z-10 animate-bounce">
+                  1
+                </span>
+              </>
+            )}
+            {isOpen ? (
+              <X className="w-5.5 h-5.5" />
+            ) : (
+              <MessageCircle className="w-5.5 h-5.5" />
+            )}
+          </motion.button>
+        </motion.div>
       )}
     </div>
   );

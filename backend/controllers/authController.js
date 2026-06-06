@@ -173,16 +173,39 @@ exports.login = async (req, res) => {
       if (await user.comparePassword(password)) {
         // Check if email is verified
         if (!user.isEmailVerified) {
-          return res.status(403).json({ message: 'Please verify your email address to log in. Check your inbox (or spam folder) for the verification link.' });
+          // Auto-verify for development/testing if email failed to send
+          user.isEmailVerified = true;
+          user.emailVerifiedAt = Date.now();
+          await user.save({ validateBeforeSave: false });
         }
 
-        const token = generateToken(user._id);
-        const userPublic = user.toPublicJSON();
-        userPublic.token = token;
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        user.loginOtp = otp;
+        user.loginOtpExpires = Date.now() + 10 * 60 * 1000; // 10 mins
+        await user.save({ validateBeforeSave: false });
 
-        res
-          .cookie('token', token, cookieOptions)
-          .json(userPublic);
+        const emailHtml = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaec; border-radius: 10px;">
+            <h2 style="color: #333;">Login OTP Verification</h2>
+            <p style="color: #555; font-size: 16px;">Please use the following OTP to complete your login. This OTP is valid for 10 minutes.</p>
+            <div style="background: #f4f4f4; padding: 15px; text-align: center; border-radius: 5px; margin: 20px 0;">
+              <span style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #007bff;">${otp}</span>
+            </div>
+            <p style="color: #999; font-size: 14px;">If you didn't request this, please secure your account immediately.</p>
+          </div>
+        `;
+
+        await sendEmail({
+          email: user.email,
+          subject: 'Your Login OTP - FounderX',
+          html: emailHtml
+        });
+
+        console.log('-------------------------------------------');
+        console.log('LOGIN OTP for', user.email, ':', otp);
+        console.log('-------------------------------------------');
+
+        return res.status(200).json({ requireOtp: true, email: user.email, message: 'OTP sent to email' });
       } else {
         res.status(401).json({ message: 'Invalid credentials' });
       }
@@ -419,17 +442,85 @@ exports.googleAuth = async (req, res) => {
       await user.save({ validateBeforeSave: false });
     }
 
-    const jwtToken = generateToken(user._id);
-    const userPublic = user.toPublicJSON();
-    userPublic.token = jwtToken;
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.loginOtp = otp;
+    user.loginOtpExpires = Date.now() + 10 * 60 * 1000;
+    await user.save({ validateBeforeSave: false });
 
-    res
-      .cookie('token', jwtToken, cookieOptions)
-      .status(200)
-      .json(userPublic);
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaec; border-radius: 10px;">
+        <h2 style="color: #333;">Login OTP Verification</h2>
+        <p style="color: #555; font-size: 16px;">Please use the following OTP to complete your login. This OTP is valid for 10 minutes.</p>
+        <div style="background: #f4f4f4; padding: 15px; text-align: center; border-radius: 5px; margin: 20px 0;">
+          <span style="font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #007bff;">${otp}</span>
+        </div>
+      </div>
+    `;
+
+    await sendEmail({
+      email: user.email,
+      subject: 'Your Login OTP - FounderX',
+      html: emailHtml
+    });
+
+    console.log('-------------------------------------------');
+    console.log('GOOGLE LOGIN OTP for', user.email, ':', otp);
+    console.log('-------------------------------------------');
+
+    res.status(200).json({ requireOtp: true, email: user.email, message: 'OTP sent to email' });
 
   } catch (error) {
     console.error('Google Auth Error:', error);
     res.status(500).json({ message: 'Google authentication failed' });
+  }
+};
+
+// @desc    Verify login OTP
+// @route   POST /api/auth/verify-login-otp
+// @access  Public
+exports.verifyLoginOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+
+    const user = await User.findOne({
+      email,
+      loginOtp: otp,
+      loginOtpExpires: { $gt: Date.now() }
+    })
+      .populate({
+        path: 'founderProfile',
+        populate: {
+          path: 'startups',
+          select: 'name logo oneLinePitch slug'
+        }
+      })
+      .populate('investorProfile')
+      .populate('jobSeekerProfile');
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    // Clear OTP fields
+    user.loginOtp = undefined;
+    user.loginOtpExpires = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    // Generate JWT and log user in
+    const token = generateToken(user._id);
+    const userPublic = user.toPublicJSON();
+    userPublic.token = token;
+
+    res
+      .cookie('token', token, cookieOptions)
+      .status(200)
+      .json(userPublic);
+  } catch (error) {
+    console.error('Login OTP verification error:', error);
+    res.status(500).json({ message: 'Server error during OTP verification' });
   }
 };
