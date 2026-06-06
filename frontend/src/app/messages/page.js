@@ -9,7 +9,6 @@ import { useSocket } from '../../context/SocketContext';
 import { Loader, User, MessageSquare } from 'lucide-react';
 import ChatList from '../../components/messages/ChatList';
 import ScheduleMeetingModal from '../../components/messages/ScheduleMeetingModal';
-import { API_URL } from '@/utils/api';
 import dynamic from 'next/dynamic';
 
 const ChatWindow = dynamic(() => import('../../components/messages/ChatWindow'), { 
