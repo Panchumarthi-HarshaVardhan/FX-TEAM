@@ -40,7 +40,9 @@ const COLLECTIONS = {
   Follow: 'follows',
   SavedItem: 'savedItems',
   MessageRequest: 'messageRequests',
-  VerificationRequest: 'verificationRequests'
+  VerificationRequest: 'verificationRequests',
+  Meeting: 'meetings',
+  Document: 'documents'
 };
 
 const toStr = (v) => (v == null ? '' : v.toString());
