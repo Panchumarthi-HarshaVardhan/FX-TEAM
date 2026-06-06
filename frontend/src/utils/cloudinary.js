@@ -1,3 +1,4 @@
+import { API_URL } from '@/utils/api';
 import axios from 'axios';
 
 export const uploadToCloudinary = async (
@@ -7,7 +8,6 @@ export const uploadToCloudinary = async (
 ) => {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
   const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
   const uploadToBackend = async () => {
     const token = localStorage.getItem('token');

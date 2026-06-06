@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState } from 'react';
 import { Copy, Check, Code } from 'lucide-react';
@@ -7,9 +8,9 @@ export default function BadgeGenerator({ startupId, slug }) {
   const [copied, setCopied] = useState(false);
   
   // Assuming API URL from env or constant
-  const apiUrl = 'http://localhost:3000'; 
+  const apiUrl = `${API_URL}`; 
   const badgeUrl = `${apiUrl}/api/startups/${startupId}/badge`;
-  const linkUrl = `http://localhost:3000/s/${slug}`; // Frontend URL
+  const linkUrl = `${API_URL}/s/${slug}`; // Frontend URL
 
   const embedCode = `<a href="${linkUrl}" target="_blank" rel="noopener noreferrer"><img src="${badgeUrl}" alt="Built on FounderX" width="200" height="60" /></a>`;
 

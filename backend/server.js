@@ -1,4 +1,4 @@
-﻿require('dotenv').config();
+require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
@@ -53,7 +53,8 @@ const isLocalOrigin = (origin) => {
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || isLocalOrigin(origin)) {
+    const frontendUrl = process.env.FRONTEND_URL;
+    if (!origin || isLocalOrigin(origin) || (frontendUrl && origin === frontendUrl)) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -67,7 +68,8 @@ const corsOptions = {
 const io = new Server(server, {
   cors: {
     origin: function (origin, callback) {
-      if (!origin || isLocalOrigin(origin)) {
+      const frontendUrl = process.env.FRONTEND_URL;
+      if (!origin || isLocalOrigin(origin) || (frontendUrl && origin === frontendUrl)) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
@@ -155,7 +157,7 @@ io.on('connection', (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));

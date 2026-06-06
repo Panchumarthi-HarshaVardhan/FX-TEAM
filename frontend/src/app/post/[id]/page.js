@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
@@ -23,7 +24,7 @@ export default function PostPage() {
 
   const fetchPost = async () => {
     try {
-      const res = await fetch(`http://localhost:3000/api/posts/${id}`, {
+      const res = await fetch(`${API_URL}/api/posts/${id}`, {
         headers: {
             'Authorization': localStorage.getItem('token') ? `Bearer ${localStorage.getItem('token')}` : ''
         },
@@ -54,7 +55,7 @@ export default function PostPage() {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      const res = await fetch('http://localhost:3000/api/posts', {
+      const res = await fetch(`${API_URL}/api/posts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

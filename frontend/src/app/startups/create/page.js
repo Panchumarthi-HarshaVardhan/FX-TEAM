@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState } from 'react';
 import { useAuth } from '../../../context/AuthContext';

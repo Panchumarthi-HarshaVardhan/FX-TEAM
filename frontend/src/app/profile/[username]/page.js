@@ -1,3 +1,4 @@
+import { API_URL } from '@/utils/api';
 import { notFound } from 'next/navigation';
 import ProfilePageClient from './ProfilePageClient';
 
@@ -5,7 +6,7 @@ async function getUser(username) {
   try {
     // Assuming backend is running locally on port 5000
     // In production, use env variable
-    const res = await fetch(`http://localhost:3000/api/users/handle/${username}`, {
+    const res = await fetch(`${API_URL}/api/users/handle/${username}`, {
       cache: 'no-store'
     });
     

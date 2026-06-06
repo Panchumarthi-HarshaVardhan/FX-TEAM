@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -88,7 +89,7 @@ export default function ProfileSetupPage() {
       let payload = {};
 
       if (role === 'user' || role === 'job_seeker') {
-        endpoint = 'http://localhost:3000/api/profile/user';
+        endpoint = `${API_URL}/api/profile/user`;
         payload = {
           profilePhoto: formData.profilePhoto,
           bio: formData.bio,
@@ -104,7 +105,7 @@ export default function ProfileSetupPage() {
           expectedSalary: formData.expectedSalary
         };
       } else if (role === 'founder') {
-        endpoint = 'http://localhost:3000/api/profile/founder';
+        endpoint = `${API_URL}/api/profile/founder`;
         payload = {
           profilePhoto: formData.profilePhoto,
           bio: formData.bio,
@@ -124,7 +125,7 @@ export default function ProfileSetupPage() {
           teamSize: formData.teamSize
         };
       } else if (role === 'investor') {
-        endpoint = 'http://localhost:3000/api/profile/investor';
+        endpoint = `${API_URL}/api/profile/investor`;
         payload = {
           profilePhoto: formData.profilePhoto,
           bio: formData.bio,

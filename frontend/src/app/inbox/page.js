@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState, useEffect, useRef } from 'react';
 import Navbar from '../../components/Navbar';
@@ -339,7 +340,7 @@ export default function MailboxPage() {
 
     setActionLoading(true);
     try {
-      const res = await fetch('${API_URL}/api/mail/compose', {
+      const res = await fetch(`${API_URL}/api/mail/compose`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

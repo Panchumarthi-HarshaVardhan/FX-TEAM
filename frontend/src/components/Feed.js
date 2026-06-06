@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/utils/api';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -565,7 +566,7 @@ export default function Feed() {
       setError('');
       const token = localStorage.getItem('token');
       
-      let url = 'http://localhost:3000/api/posts';
+      let url = `${API_URL}/api/posts`;
       // Watch or search filters
       if (activeTab === 'videos') {
         url += '?type=video';
